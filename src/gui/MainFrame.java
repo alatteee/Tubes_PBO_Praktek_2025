@@ -1,20 +1,64 @@
 package gui;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 import facade.PetCareFacade;
+import manager.CustomerManager;
+import manager.PetManager;
+import manager.OrderManager;
+import model.Customer;
+import model.Pet;
+import model.ServiceOrder;
+import model.Receipt;
+import strategy.payment.CashPayment;
+import strategy.payment.EWalletPayment;
+import strategy.payment.PaymentStrategy;
+import strategy.payment.TransferPayment;
 
 public class MainFrame extends JFrame {
 
-    private PetCareFacade facade;
+    private final PetCareFacade facade;
 
-    private JTabbedPane tabbedPane;
+    // --- Komponen Customer/Pet tab ---
+    private JTextField txtCustName;
+    private JTextField txtCustPhone;
+    private JTextField txtOwnerId;
+    private JComboBox<String> cbPetType;
+    private JTextField txtPetName;
+    private JTextField txtPetAge;
+    private JButton btnAddCustomer;
+    private JButton btnAddPet;
+    private JTable tblCustomers;
+    private JTable tblPets;
 
-    // Nanti kita tambahin field komponen lain (tabel, textfield, dll) kalau sudah masuk fase wiring
+    // --- Komponen Service Order tab ---
+    private JTextField txtPetId;
+    private JComboBox<String> cbServiceType;
+    private JTextField txtEntry;
+    private JTextField txtExit;
+    private JButton btnCreateOrder;
+    private JTable tblOrders;
+    private JButton btnStart;
+    private JButton btnFinish;
+
+    // --- Komponen Checkout tab ---
+    private JTable tblCheckoutOrders;
+    private JComboBox<String> cbPayment;
+    private JButton btnCheckout;
+
+    private final DateTimeFormatter dtFormatter =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+
     public MainFrame() {
         this.facade = new PetCareFacade();
         initGUI();
+        initListeners();
+        initialLoad();
     }
 
     private void initGUI() {
@@ -23,8 +67,7 @@ public class MainFrame extends JFrame {
         setSize(1000, 650);
         setLocationRelativeTo(null);
 
-        tabbedPane = new JTabbedPane();
-
+        JTabbedPane tabbedPane = new JTabbedPane();
         tabbedPane.addTab("Customer & Pet", createCustomerPetPanel());
         tabbedPane.addTab("Service Order", createServiceOrderPanel());
         tabbedPane.addTab("Checkout", createCheckoutPanel());
@@ -33,14 +76,13 @@ public class MainFrame extends JFrame {
         add(tabbedPane, BorderLayout.CENTER);
     }
 
-    /**
-     * Panel untuk data Customer dan Pet.
-     * Sekarang fokus layout dulu, event ke facade nanti.
-     */
+    // ============================================================
+    // =============== PANEL CUSTOMER & PET =======================
+    // ============================================================
     private JPanel createCustomerPetPanel() {
         JPanel panel = new JPanel(new BorderLayout());
 
-        // Panel form customer di atas
+        // --- Customer form ---
         JPanel customerForm = new JPanel(new GridBagLayout());
         customerForm.setBorder(BorderFactory.createTitledBorder("Register Customer"));
 
@@ -49,10 +91,10 @@ public class MainFrame extends JFrame {
         gbc.anchor = GridBagConstraints.WEST;
 
         JLabel lblCustName = new JLabel("Name:");
-        JTextField txtCustName = new JTextField(20);
+        txtCustName = new JTextField(20);
         JLabel lblCustPhone = new JLabel("Phone:");
-        JTextField txtCustPhone = new JTextField(15);
-        JButton btnAddCustomer = new JButton("Add Customer");
+        txtCustPhone = new JTextField(15);
+        btnAddCustomer = new JButton("Add Customer");
 
         gbc.gridx = 0; gbc.gridy = 0;
         customerForm.add(lblCustName, gbc);
@@ -68,7 +110,7 @@ public class MainFrame extends JFrame {
         gbc.anchor = GridBagConstraints.EAST;
         customerForm.add(btnAddCustomer, gbc);
 
-        // Panel form pet di tengah
+        // --- Pet form ---
         JPanel petForm = new JPanel(new GridBagLayout());
         petForm.setBorder(BorderFactory.createTitledBorder("Register Pet"));
 
@@ -77,14 +119,14 @@ public class MainFrame extends JFrame {
         gbc.anchor = GridBagConstraints.WEST;
 
         JLabel lblOwnerId = new JLabel("Owner ID:");
-        JTextField txtOwnerId = new JTextField(10); // nanti bisa diganti combo/table
+        txtOwnerId = new JTextField(10);
         JLabel lblPetType = new JLabel("Type:");
-        JComboBox<String> cbPetType = new JComboBox<>(new String[]{"Cat", "Dog", "Rabbit"});
-        JLabel lblPetName = new JLabel("Name:");
-        JTextField txtPetName = new JTextField(15);
+        cbPetType = new JComboBox<>(new String[]{"Cat", "Dog", "Rabbit"});
+        JLabel lblPetName = new JLabel("Pet Name:");
+        txtPetName = new JTextField(15);
         JLabel lblPetAge = new JLabel("Age:");
-        JTextField txtPetAge = new JTextField(5);
-        JButton btnAddPet = new JButton("Add Pet");
+        txtPetAge = new JTextField(5);
+        btnAddPet = new JButton("Add Pet");
 
         gbc.gridx = 0; gbc.gridy = 0;
         petForm.add(lblOwnerId, gbc);
@@ -110,15 +152,20 @@ public class MainFrame extends JFrame {
         gbc.anchor = GridBagConstraints.EAST;
         petForm.add(btnAddPet, gbc);
 
-        // Tabel customer & pet di bawah (sementara dummy model)
-        JTable tblCustomers = new JTable(
+        JPanel topForms = new JPanel(new GridLayout(2, 1));
+        topForms.add(customerForm);
+        topForms.add(petForm);
+
+        // --- Tables ---
+        tblCustomers = new JTable(new DefaultTableModel(
                 new Object[][]{},
                 new String[]{"Customer ID", "Name", "Phone"}
-        );
-        JTable tblPets = new JTable(
+        ));
+
+        tblPets = new JTable(new DefaultTableModel(
                 new Object[][]{},
                 new String[]{"Pet ID", "Name", "Type", "Owner ID", "Status"}
-        );
+        ));
 
         JSplitPane splitTables = new JSplitPane(
                 JSplitPane.VERTICAL_SPLIT,
@@ -127,22 +174,14 @@ public class MainFrame extends JFrame {
         );
         splitTables.setResizeWeight(0.5);
 
-        // Susun di panel utama
-        JPanel topForms = new JPanel(new GridLayout(2, 1));
-        topForms.add(customerForm);
-        topForms.add(petForm);
-
         panel.add(topForms, BorderLayout.NORTH);
         panel.add(splitTables, BorderLayout.CENTER);
-
-        // NOTE:
-        // ActionListener tombol (btnAddCustomer, btnAddPet) nanti ditambah setelah Facade & Manager siap.
         return panel;
     }
 
-    /**
-     * Panel untuk membuat dan mengelola service order.
-     */
+    // ============================================================
+    // =============== PANEL SERVICE ORDER ========================
+    // ============================================================
     private JPanel createServiceOrderPanel() {
         JPanel panel = new JPanel(new BorderLayout());
 
@@ -153,16 +192,14 @@ public class MainFrame extends JFrame {
         gbc.anchor = GridBagConstraints.WEST;
 
         JLabel lblPetId = new JLabel("Pet ID:");
-        JTextField txtPetId = new JTextField(10);
+        txtPetId = new JTextField(10);
         JLabel lblServiceType = new JLabel("Service Type:");
-        JComboBox<String> cbServiceType = new JComboBox<>(new String[]{"Grooming", "Boarding", "Medical"});
-
-        JLabel lblEntry = new JLabel("Entry Time (yyyy-MM-dd HH:mm):");
-        JTextField txtEntry = new JTextField(16);
-        JLabel lblExit = new JLabel("Exit Time (optional / boarding):");
-        JTextField txtExit = new JTextField(16);
-
-        JButton btnCreateOrder = new JButton("Create Order");
+        cbServiceType = new JComboBox<>(new String[]{"Grooming", "Boarding", "Medical"});
+        JLabel lblEntry = new JLabel("Entry (yyyy-MM-dd HH:mm):");
+        txtEntry = new JTextField(16);
+        JLabel lblExit = new JLabel("Exit (for Boarding, optional):");
+        txtExit = new JTextField(16);
+        btnCreateOrder = new JButton("Create Order");
 
         gbc.gridx = 0; gbc.gridy = 0;
         orderForm.add(lblPetId, gbc);
@@ -188,53 +225,45 @@ public class MainFrame extends JFrame {
         gbc.anchor = GridBagConstraints.EAST;
         orderForm.add(btnCreateOrder, gbc);
 
-        // Tabel orders aktif
-        JTable tblOrders = new JTable(
+        tblOrders = new JTable(new DefaultTableModel(
                 new Object[][]{},
                 new String[]{"Order ID", "Pet", "Customer", "Service", "Status", "Total"}
-        );
-
+        ));
         JScrollPane scrollOrders = new JScrollPane(tblOrders);
 
-        // Panel tombol status (Start/Finish)
         JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton btnStart = new JButton("Start Service");
-        JButton btnFinish = new JButton("Finish Service");
+        btnStart = new JButton("Start Service");
+        btnFinish = new JButton("Finish Service");
         statusPanel.add(btnStart);
         statusPanel.add(btnFinish);
 
         panel.add(orderForm, BorderLayout.NORTH);
         panel.add(scrollOrders, BorderLayout.CENTER);
         panel.add(statusPanel, BorderLayout.SOUTH);
-
-        // ActionListener order & tombol status nanti kita isi setelah Facade & Manager siap.
         return panel;
     }
 
-    /**
-     * Panel untuk Checkout dan membuka ReceiptDialog.
-     */
+    // ============================================================
+    // ================== PANEL CHECKOUT ==========================
+    // ============================================================
     private JPanel createCheckoutPanel() {
         JPanel panel = new JPanel(new BorderLayout());
 
-        // Tabel order yang sudah "Selesai" dan siap di-checkout
-        JTable tblCheckoutOrders = new JTable(
+        tblCheckoutOrders = new JTable(new DefaultTableModel(
                 new Object[][]{},
                 new String[]{"Order ID", "Pet", "Customer", "Service", "Status", "Total"}
-        );
-
+        ));
         JScrollPane scroll = new JScrollPane(tblCheckoutOrders);
 
         JPanel bottomPanel = new JPanel(new GridBagLayout());
         bottomPanel.setBorder(BorderFactory.createTitledBorder("Checkout"));
-
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(4, 4, 4, 4);
         gbc.anchor = GridBagConstraints.WEST;
 
         JLabel lblPayment = new JLabel("Payment Method:");
-        JComboBox<String> cbPayment = new JComboBox<>(new String[]{"Cash", "Transfer Bank", "E-Wallet"});
-        JButton btnCheckout = new JButton("Pay & Print Receipt");
+        cbPayment = new JComboBox<>(new String[]{"Cash", "Transfer Bank", "E-Wallet"});
+        btnCheckout = new JButton("Pay & Print Receipt");
 
         gbc.gridx = 0; gbc.gridy = 0;
         bottomPanel.add(lblPayment, gbc);
@@ -247,18 +276,244 @@ public class MainFrame extends JFrame {
 
         panel.add(scroll, BorderLayout.CENTER);
         panel.add(bottomPanel, BorderLayout.SOUTH);
-
-        // Nanti: btnCheckout akan ambil order terpilih, buat PaymentStrategy, panggil facade.checkout(...),
-        // lalu buka ReceiptDialog.
         return panel;
     }
 
-    public PetCareFacade getFacade() {
-        return facade;
+    // ============================================================
+    // =============== LISTENERS & HELPERS ========================
+    // ============================================================
+    private void initListeners() {
+        // Add Customer
+        btnAddCustomer.addActionListener(e -> {
+            try {
+                String name = txtCustName.getText().trim();
+                String phone = txtCustPhone.getText().trim();
+                facade.registerCustomer(name, phone);
+                JOptionPane.showMessageDialog(this, "Customer registered");
+                txtCustName.setText("");
+                txtCustPhone.setText("");
+                loadCustomers();
+            } catch (Exception ex) {
+                showError(ex);
+            }
+        });
+
+        // Add Pet
+        btnAddPet.addActionListener(e -> {
+            try {
+                String ownerId = txtOwnerId.getText().trim();
+                String type = (String) cbPetType.getSelectedItem();
+                String petName = txtPetName.getText().trim();
+                int age = Integer.parseInt(txtPetAge.getText().trim());
+
+                facade.registerPet(ownerId, type, petName, age);
+                JOptionPane.showMessageDialog(this, "Pet registered");
+                txtPetName.setText("");
+                txtPetAge.setText("");
+                loadPets(); // nanti bisa khusus by owner
+            } catch (NumberFormatException nfe) {
+                JOptionPane.showMessageDialog(this, "Age harus angka", "Input Error", JOptionPane.ERROR_MESSAGE);
+            } catch (Exception ex) {
+                showError(ex);
+            }
+        });
+
+        // Create Order
+        btnCreateOrder.addActionListener(e -> {
+            try {
+                String petId = txtPetId.getText().trim();
+                String serviceType = (String) cbServiceType.getSelectedItem();
+                String entryText = txtEntry.getText().trim();
+                String exitText = txtExit.getText().trim();
+
+                LocalDateTime entry = LocalDateTime.parse(entryText, dtFormatter);
+                LocalDateTime exit = null;
+                if (!exitText.isBlank()) {
+                    exit = LocalDateTime.parse(exitText, dtFormatter);
+                }
+
+                facade.createServiceOrder(petId, serviceType, entry, exit);
+                JOptionPane.showMessageDialog(this, "Order created");
+                loadActiveOrders();
+                loadCheckoutOrders();
+            } catch (Exception ex) {
+                showError(ex);
+            }
+        });
+
+        // Start Service
+        btnStart.addActionListener(e -> {
+            int row = tblOrders.getSelectedRow();
+            if (row == -1) {
+                JOptionPane.showMessageDialog(this, "Pilih order dahulu", "Warning", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            String orderId = tblOrders.getValueAt(row, 0).toString();
+            try {
+                facade.startService(orderId);
+                JOptionPane.showMessageDialog(this, "Service started");
+                loadActiveOrders();
+                loadCheckoutOrders();
+            } catch (Exception ex) {
+                showError(ex);
+            }
+        });
+
+        // Finish Service
+        btnFinish.addActionListener(e -> {
+            int row = tblOrders.getSelectedRow();
+            if (row == -1) {
+                JOptionPane.showMessageDialog(this, "Pilih order dahulu", "Warning", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            String orderId = tblOrders.getValueAt(row, 0).toString();
+            try {
+                facade.finishService(orderId);
+                JOptionPane.showMessageDialog(this, "Service finished");
+                loadActiveOrders();
+                loadCheckoutOrders();
+            } catch (Exception ex) {
+                showError(ex);
+            }
+        });
+
+        // Checkout
+        btnCheckout.addActionListener(e -> {
+            int row = tblCheckoutOrders.getSelectedRow();
+            if (row == -1) {
+                JOptionPane.showMessageDialog(this, "Pilih order untuk checkout", "Warning", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            String orderId = tblCheckoutOrders.getValueAt(row, 0).toString();
+            String method = (String) cbPayment.getSelectedItem();
+            PaymentStrategy payment = createPaymentStrategy(method);
+
+            try {
+                Receipt receipt = facade.checkout(orderId, payment);
+                JOptionPane.showMessageDialog(this, "Payment success");
+                // Tampilkan dialog struk
+                ReceiptDialog dialog = new ReceiptDialog(this, receipt);
+                dialog.setVisible(true);
+
+                loadActiveOrders();
+                loadCheckoutOrders();
+            } catch (Exception ex) {
+                showError(ex);
+            }
+        });
+    }
+
+    private void initialLoad() {
+        loadCustomers();
+        loadPets();
+        loadActiveOrders();
+        loadCheckoutOrders();
+    }
+
+    // === Loader tabel (silakan sesuaikan dengan Manager/DAO kalian) ===
+    private void loadCustomers() {
+        try {
+            CustomerManager cm = facade.getCustomerManager();
+            List<Customer> customers = cm.getAllCustomers(); // TODO: pastikan method ini ada
+            DefaultTableModel model = (DefaultTableModel) tblCustomers.getModel();
+            model.setRowCount(0);
+            for (Customer c : customers) {
+                model.addRow(new Object[]{
+                        c.getCustomerId(),
+                        c.getName(),
+                        c.getPhone()
+                });
+            }
+        } catch (Exception e) {
+            // boleh di-silent atau ditampilkan
+            e.printStackTrace();
+        }
+    }
+
+    private void loadPets() {
+        try {
+            PetManager pm = facade.getPetManager();
+            List<Pet> pets = pm.getAllPets(); // TODO: kalau nggak ada, ganti cara ambil datanya
+            DefaultTableModel model = (DefaultTableModel) tblPets.getModel();
+            model.setRowCount(0);
+            for (Pet p : pets) {
+                model.addRow(new Object[]{
+                        p.getPetId(),
+                        p.getName(),
+                        p.getClass().getSimpleName(),
+                        p.getOwner() != null ? p.getOwner().getCustomerId() : "",
+                        p.getStatus()
+                });
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void loadActiveOrders() {
+        try {
+            List<ServiceOrder> orders = facade.getActiveOrders();
+            DefaultTableModel model = (DefaultTableModel) tblOrders.getModel();
+            model.setRowCount(0);
+            for (ServiceOrder o : orders) {
+                model.addRow(new Object[]{
+                        o.getOrderId(),
+                        o.getPet() != null ? o.getPet().getName() : "",
+                        o.getCustomer() != null ? o.getCustomer().getName() : "",
+                        o.getService() != null ? o.getService().getName() : "",
+                        o.getStatus(),
+                        o.getTotalCost()
+                });
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void loadCheckoutOrders() {
+        try {
+            // Sederhana: pakai getActiveOrders() lalu filter di facade/Manager,
+            // atau kamu buat method khusus getFinishedOrders().
+            OrderManager om = facade.getOrderManager();
+            List<ServiceOrder> finished = om.getFinishedOrders(); // TODO: pastikan method ini ada / ganti
+            DefaultTableModel model = (DefaultTableModel) tblCheckoutOrders.getModel();
+            model.setRowCount(0);
+            for (ServiceOrder o : finished) {
+                model.addRow(new Object[]{
+                        o.getOrderId(),
+                        o.getPet() != null ? o.getPet().getName() : "",
+                        o.getCustomer() != null ? o.getCustomer().getName() : "",
+                        o.getService() != null ? o.getService().getName() : "",
+                        o.getStatus(),
+                        o.getTotalCost()
+                });
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private PaymentStrategy createPaymentStrategy(String method) {
+        if (method == null) return new CashPayment(); // default
+        String m = method.toLowerCase();
+        if (m.contains("transfer")) {
+            return new TransferPayment();
+        } else if (m.contains("wallet") || m.contains("e-wallet") || m.contains("ewallet")) {
+            return new EWalletPayment();
+        } else {
+            return new CashPayment();
+        }
+    }
+
+    private void showError(Exception ex) {
+        ex.printStackTrace();
+        JOptionPane.showMessageDialog(this,
+                ex.getMessage(),
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
     }
 
     public static void main(String[] args) {
-        // Opsional: pakai Look & Feel OS
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception ignore) {}
