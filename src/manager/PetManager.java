@@ -1,6 +1,7 @@
 package manager;
 
 import dao.PetDAO;
+import dao.JdbcPetDAO;
 import factory.PetFactory;
 import model.Customer;
 import model.Pet;
@@ -23,7 +24,7 @@ public class PetManager {
      * Cocok dipakai oleh PetCareFacade.
      */
     public PetManager() {
-        this.petDAO = new PetDAO();
+        this.petDAO = new JdbcPetDAO();   // <<--- tadinya new PetDAO() (salah)
         this.petFactory = new PetFactory();
     }
 
@@ -47,14 +48,15 @@ public class PetManager {
         }
 
         // Buat Pet sesuai Factory Method Pattern
-        Pet pet = petFactory.createPet(type, name, age, owner);
+        // PetFactory.createPet membutuhkan ownerId (String), bukan objek Customer
+        Pet pet = PetFactory.createPet(type, name, age, owner.getCustomerId());
 
         // Pastikan status awal benar
         if (pet.getStatus() == null || pet.getStatus().isBlank()) {
             pet.setStatus("Tidak dalam layanan");
         }
 
-        // Simpan Pet lewat DAO
+        // Simpan Pet lewat DAO (Supabase)
         return petDAO.save(pet);
     }
 
@@ -82,7 +84,8 @@ public class PetManager {
         if (owner == null) {
             throw new IllegalArgumentException("Owner tidak boleh null");
         }
-        return petDAO.findByCustomer(owner);
+        // PetDAO.findByCustomer butuh ownerId (String)
+        return petDAO.findByCustomer(owner.getCustomerId());
     }
 
     /**

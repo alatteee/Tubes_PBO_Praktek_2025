@@ -1,76 +1,70 @@
 package gui;
 
+import model.Receipt;
+
 import javax.swing.*;
 import java.awt.*;
-import java.io.IOException;
-
-import model.Receipt;
 
 public class ReceiptDialog extends JDialog {
 
-    private Receipt receipt;
-    private JTextArea textArea;
+    private final Receipt receipt;
+    private JTextArea txtReceipt;
+    private JButton btnSave;
+    private JButton btnClose;
 
-    public ReceiptDialog(Frame parent, Receipt receipt) {
-        super(parent, "Receipt", true);
+    public ReceiptDialog(Frame owner, Receipt receipt) {
+        super(owner, "Receipt", true);
         this.receipt = receipt;
-        initDialog();
+
+        initComponents();
+        initListeners();
+
+        pack();
+        setLocationRelativeTo(owner);
     }
 
-    private void initDialog() {
-        setSize(500, 600);
-        setLocationRelativeTo(getParent());
-        setLayout(new BorderLayout());
+    private void initComponents() {
+        setLayout(new BorderLayout(8, 8));
 
-        textArea = new JTextArea();
-        textArea.setEditable(false);
-        if (receipt != null) {
-            textArea.setText(receipt.generateReceiptText());
-        }
-        add(new JScrollPane(textArea), BorderLayout.CENTER);
+        txtReceipt = new JTextArea(20, 60);
+        txtReceipt.setEditable(false);
+        txtReceipt.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+        txtReceipt.setText(receipt.generateReceiptText());
 
-        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton btnSave = new JButton("Save as PDF");
-        JButton btnClose = new JButton("Close");
+        JScrollPane scrollPane = new JScrollPane(txtReceipt);
 
-        bottomPanel.add(btnSave);
-        bottomPanel.add(btnClose);
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        btnSave = new JButton("Save as PDF");
+        btnClose = new JButton("Close");
+        buttonPanel.add(btnSave);
+        buttonPanel.add(btnClose);
 
-        add(bottomPanel, BorderLayout.SOUTH);
-
-        btnSave.addActionListener(e -> onSave());
-        btnClose.addActionListener(e -> dispose());
+        add(scrollPane, BorderLayout.CENTER);
+        add(buttonPanel, BorderLayout.SOUTH);
     }
 
-    private void onSave() {
-        if (receipt == null) {
-            JOptionPane.showMessageDialog(this,
-                    "No receipt data to save.",
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        JFileChooser chooser = new JFileChooser();
-        chooser.setDialogTitle("Choose folder to save receipt");
-        chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-
-        int result = chooser.showSaveDialog(this);
-        if (result == JFileChooser.APPROVE_OPTION) {
-            String dir = chooser.getSelectedFile().getAbsolutePath();
+    private void initListeners() {
+        btnSave.addActionListener(e -> {
             try {
-                receipt.saveToPDF(dir);
-                JOptionPane.showMessageDialog(this,
+                // versi baru: saveToPDF() TANPA parameter
+                receipt.saveToPDF();
+                JOptionPane.showMessageDialog(
+                        this,
                         "Receipt saved to: " + receipt.getPdfFilePath(),
-                        "Success",
-                        JOptionPane.INFORMATION_MESSAGE);
-            } catch (IOException ex) {
+                        "Saved",
+                        JOptionPane.INFORMATION_MESSAGE
+                );
+            } catch (Exception ex) {
                 ex.printStackTrace();
-                JOptionPane.showMessageDialog(this,
+                JOptionPane.showMessageDialog(
+                        this,
                         "Failed to save receipt: " + ex.getMessage(),
                         "Error",
-                        JOptionPane.ERROR_MESSAGE);
+                        JOptionPane.ERROR_MESSAGE
+                );
             }
-        }
+        });
+
+        btnClose.addActionListener(e -> dispose());
     }
 }

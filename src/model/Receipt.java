@@ -6,8 +6,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-import strategy.payment.PaymentStrategy; // aktifkan kalau pakai package
-// import model.ServiceOrder; // aktifkan kalau ServiceOrder pakai package
+import strategy.payment.PaymentStrategy;
 
 public class Receipt {
 
@@ -17,15 +16,24 @@ public class Receipt {
     private PaymentStrategy payment;
     private String pdfFilePath;
 
+    /**
+     * Constructor lengkap sesuai spec:
+     * pdfFilePath boleh null, nanti diisi otomatis oleh saveToPDF().
+     */
     public Receipt(String transactionId,
                    LocalDateTime transactionTime,
                    ServiceOrder order,
-                   PaymentStrategy payment) {
+                   PaymentStrategy payment,
+                   String pdfFilePath) {
+
         this.transactionId = transactionId;
         this.transactionTime = transactionTime;
         this.order = order;
         this.payment = payment;
+        this.pdfFilePath = pdfFilePath;
     }
+
+    // Getters
 
     public String getTransactionId() {
         return transactionId;
@@ -47,6 +55,10 @@ public class Receipt {
         return pdfFilePath;
     }
 
+    public void setPdfFilePath(String path) {
+        this.pdfFilePath = path;
+    }
+
     /**
      * Membuat teks struk untuk ditampilkan di GUI atau disimpan ke file.
      */
@@ -61,6 +73,7 @@ public class Receipt {
 
         if (order != null) {
             sb.append("Order ID       : ").append(order.getOrderId()).append("\n");
+
             if (order.getCustomer() != null) {
                 sb.append("Customer       : ")
                   .append(order.getCustomer().getName())
@@ -68,6 +81,7 @@ public class Receipt {
                   .append(order.getCustomer().getCustomerId())
                   .append(")\n");
             }
+
             if (order.getPet() != null) {
                 sb.append("Pet            : ")
                   .append(order.getPet().getName())
@@ -75,11 +89,11 @@ public class Receipt {
                   .append(order.getPet().getClass().getSimpleName())
                   .append(")\n");
             }
+
             if (order.getService() != null) {
-                sb.append("Service        : ")
-                  .append(order.getService().getName())
-                  .append("\n");
+                sb.append("Service        : ").append(order.getService().getName()).append("\n");
             }
+
             sb.append("Total Cost     : ").append(order.getTotalCost()).append("\n");
         }
 
@@ -96,19 +110,19 @@ public class Receipt {
 
     /**
      * Dummy saveToPDF: sebenarnya menyimpan file TXT, tapi ekstensi .pdf.
-     * Nanti kalau mau pakai library PDF beneran bisa diganti di sini.
+     * Sesuai spec: TIDAK ADA PARAMETER.
      */
-    public void saveToPDF(String directoryPath) throws IOException {
-        if (directoryPath == null || directoryPath.isBlank()) {
-            directoryPath = "."; // current directory
-        }
-
+    public void saveToPDF() {
         String safeId = transactionId != null ? transactionId : "TRX-" + System.currentTimeMillis();
-        String fileName = "receipt_" + safeId + ".pdf"; // ekstensi .pdf walau isinya text
+        String directoryPath = "receipts";
+
+        String fileName = "receipt_" + safeId + ".pdf";
         String fullPath = directoryPath + "/" + fileName;
 
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(fullPath))) {
             writer.write(generateReceiptText());
+        } catch (IOException e) {
+            throw new RuntimeException("Gagal menyimpan receipt ke file: " + fullPath, e);
         }
 
         this.pdfFilePath = fullPath;

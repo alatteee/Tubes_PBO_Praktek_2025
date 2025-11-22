@@ -1,83 +1,99 @@
 package manager;
 
+import dao.JdbcServiceOrderDAO;
+import dao.ServiceOrderDAO;
+import model.Customer;
 import model.Pet;
 import model.ServiceOrder;
 import strategy.service.ServiceStrategy;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
+/**
+ * OrderManager:
+ * - membuat ServiceOrder baru
+ * - mengecek apakah Pet masih aktif dalam layanan
+ * - mengubah status order (start, finish)
+ * - mengambil daftar order aktif / selesai
+ */
 public class OrderManager {
 
-    private final List<ServiceOrder> orders = new ArrayList<>();
+    private final ServiceOrderDAO orderDAO;
 
-    public ServiceOrder createOrder(Pet pet, ServiceStrategy service,
-                                    LocalDateTime entry, LocalDateTime exit) {
+    public OrderManager() {
+        this.orderDAO = new JdbcServiceOrderDAO();
+    }
+
+    /**
+     * Cek apakah Pet punya order aktif (Menunggu / Sedang dikerjakan)
+     */
+    public boolean isPetActive(Pet pet) {
+        if (pet == null) {
+            throw new IllegalArgumentException("Pet tidak boleh null");
+        }
+
+        List<ServiceOrder> orders = orderDAO.findByPet(pet.getPetId());
+        for (ServiceOrder order : orders) {
+            String st = order.getStatus();
+            if ("Menunggu".equalsIgnoreCase(st) || "Sedang dikerjakan".equalsIgnoreCase(st)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Membuat order baru.
+     */
+    public ServiceOrder createOrder(Pet pet,
+                                    Customer customer,
+                                    ServiceStrategy service,
+                                    LocalDateTime entryTime,
+                                    LocalDateTime exitTime) {
+
+        if (pet == null) throw new IllegalArgumentException("Pet tidak boleh null");
+        if (customer == null) throw new IllegalArgumentException("Customer tidak boleh null");
+        if (service == null) throw new IllegalArgumentException("Service tidak boleh null");
+
+        if (entryTime == null) {
+            entryTime = LocalDateTime.now();
+        }
 
         if (isPetActive(pet)) {
-            throw new IllegalStateException("Pet masih memiliki layanan aktif");
-        }
-        if (exit.isBefore(entry)) {
-            throw new IllegalArgumentException("Exit time tidak boleh sebelum entry time");
+            throw new IllegalStateException("Pet masih memiliki layanan aktif.");
         }
 
-        String id = "ORD-" + System.currentTimeMillis();
+        String orderId = "ORD-" + UUID.randomUUID();
 
-        ServiceOrder order = new ServiceOrder(
-                id,
-                pet,
-                pet.getOwner(),   // pastikan Pet punya getOwner()
-                service,
-                entry,
-                exit
-        );
+        ServiceOrder order = new ServiceOrder(orderId, pet, customer, service, entryTime, exitTime);
+        order.calculateTotal(); // hitung total pakai strategy
 
-        orders.add(order);
+        // status awal "Menunggu" sudah default
+        orderDAO.save(order);
         return order;
     }
 
     public void updateStatus(String orderId, String newStatus) {
-        ServiceOrder order = findById(orderId);
-        if (order == null) {
-            throw new IllegalArgumentException("Order tidak ditemukan");
+        if (orderId == null || orderId.isBlank()) {
+            throw new IllegalArgumentException("Order ID tidak boleh kosong");
         }
-        order.updateStatus(newStatus);
+        orderDAO.updateStatus(orderId, newStatus);
     }
 
-    public boolean isPetActive(Pet pet) {
-        return orders.stream()
-                .anyMatch(o -> o.getPet().equals(pet)
-                        && !"Sudah diambil".equalsIgnoreCase(o.getStatus()));
-    }
-
-    /** Semua order yang masih aktif (belum diambil) */
-    public List<ServiceOrder> getActiveOrders() {
-        return orders.stream()
-                .filter(o -> !"Sudah diambil".equalsIgnoreCase(o.getStatus()))
-                .toList();
-    }
-
-    /** ✅ Tambahan: order yang sudah SELESAI, dipakai di tab Checkout */
-    public List<ServiceOrder> getFinishedOrders() {
-        return orders.stream()
-                .filter(o -> "Selesai".equalsIgnoreCase(o.getStatus()))
-                .toList();
-    }
-
-    /** ✅ Tambahan: dipakai PetCareFacade.checkout() */
     public ServiceOrder getOrderById(String id) {
         if (id == null || id.isBlank()) {
             throw new IllegalArgumentException("Order ID tidak boleh kosong");
         }
-        return findById(id);
+        return orderDAO.findById(id);
     }
 
-    // Helper private
-    private ServiceOrder findById(String id) {
-        return orders.stream()
-                .filter(o -> o.getOrderId().equals(id))
-                .findFirst()
-                .orElse(null);
+    public List<ServiceOrder> getActiveOrders() {
+        return orderDAO.findActiveOrders();
+    }
+
+    public List<ServiceOrder> getFinishedOrders() {
+        return orderDAO.findFinishedOrders();
     }
 }

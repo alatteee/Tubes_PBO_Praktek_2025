@@ -52,6 +52,16 @@ public class ServiceOrder {
         return totalCost;
     }
 
+    // dipakai DAO ketika load dari DB
+    public void setTotalCost(double totalCost) {
+        this.totalCost = totalCost;
+    }
+
+    // setter khusus untuk load dari DB (tanpa validasi transition)
+    public void setStatusFromDb(String status) {
+        this.status = status;
+    }
+
     // Getters
     public String getOrderId() { return orderId; }
     public Pet getPet() { return pet; }

@@ -433,7 +433,7 @@ public class MainFrame extends JFrame {
     private void loadPets() {
         try {
             PetManager pm = facade.getPetManager();
-            List<Pet> pets = pm.getAllPets(); // TODO: kalau nggak ada, ganti cara ambil datanya
+            List<Pet> pets = pm.getAllPets();
             DefaultTableModel model = (DefaultTableModel) tblPets.getModel();
             model.setRowCount(0);
             for (Pet p : pets) {
@@ -441,14 +441,15 @@ public class MainFrame extends JFrame {
                         p.getPetId(),
                         p.getName(),
                         p.getClass().getSimpleName(),
-                        p.getOwner() != null ? p.getOwner().getCustomerId() : "",
+                        // kolom "Owner ID" → langsung pakai ownerId dari Pet
+                        p.getOwnerId(),
                         p.getStatus()
                 });
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
+    }    
 
     private void loadActiveOrders() {
         try {

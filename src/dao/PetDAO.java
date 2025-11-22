@@ -1,6 +1,5 @@
 package dao;
 
-import model.Customer;
 import model.Pet;
 import java.util.List;
 
@@ -9,10 +8,18 @@ import java.util.List;
  * Diimplementasikan oleh Anggota 3.
  */
 public interface PetDAO {
-    Pet save(Pet pet) throws Exception;
-    Pet findById(String id) throws Exception;
-    // Method untuk mengambil hewan berdasarkan pemiliknya (Customer)
-    List<Pet> findByCustomer(String ownerId) throws Exception; 
-    Pet update(Pet pet) throws Exception;
-    boolean delete(String id) throws Exception;
+
+    Pet save(Pet pet);
+
+    Pet findById(String id);
+
+    // Ambil semua pet (untuk tabel GUI)
+    List<Pet> findAll();
+
+    // Ambil hewan berdasarkan ID pemiliknya (Customer.id)
+    List<Pet> findByCustomer(String ownerId);
+
+    Pet update(Pet pet);
+
+    boolean delete(String id);
 }

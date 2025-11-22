@@ -3,6 +3,7 @@ package manager;
 import java.util.List;
 
 import dao.CustomerDAO;
+import dao.JdbcCustomerDAO;
 import model.Customer;
 
 /**
@@ -20,7 +21,8 @@ public class CustomerManager {
      * Dipakai oleh PetCareFacade (tanpa dependency injection eksplisit).
      */
     public CustomerManager() {
-        this.customerDAO = new CustomerDAO();
+        // PENTING: gunakan implementasi JDBC, bukan interface langsung
+        this.customerDAO = new JdbcCustomerDAO();
     }
 
     /**
@@ -50,7 +52,7 @@ public class CustomerManager {
                     "Data pelanggan tidak valid. Nama tidak boleh kosong dan format nomor telepon salah.");
         }
 
-        // Simpan ke DB via DAO
+        // Simpan ke DB via DAO (Supabase)
         return customerDAO.save(newCustomer);
     }
 
