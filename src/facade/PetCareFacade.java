@@ -3,6 +3,8 @@ package facade;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import dao.JdbcReceiptDAO;
+import dao.ReceiptDAO;
 import manager.CustomerManager;
 import manager.PetManager;
 import manager.OrderManager;
@@ -28,11 +30,13 @@ public class PetCareFacade {
     private final CustomerManager customerManager;
     private final PetManager petManager;
     private final OrderManager orderManager;
+    private final ReceiptDAO receiptDAO;
 
     public PetCareFacade() {
         this.customerManager = new CustomerManager();
         this.petManager = new PetManager();
         this.orderManager = new OrderManager();
+        this.receiptDAO = new JdbcReceiptDAO();
     }
 
     // ===================== CUSTOMER =====================
@@ -144,7 +148,7 @@ public class PetCareFacade {
         return orderManager.getFinishedOrders();
     }
 
-    // ===================== CHECKOUT (Phase 2, tanpa ReceiptDAO) =====================
+    // ===================== CHECKOUT (Phase 3, dengan ReceiptDAO) =====================
 
     public Receipt checkout(String orderId, PaymentStrategy paymentStrategy) {
         if (orderId == null || orderId.isBlank()) {
@@ -181,14 +185,17 @@ public class PetCareFacade {
             petManager.update(pet);
         }
 
-        // Generate receipt (belum disimpan ke DB, itu Phase 3)
+        // Generate receipt
         String txId = generateTransactionId(orderId);
         LocalDateTime now = LocalDateTime.now();
 
         Receipt receipt = new Receipt(txId, now, order, paymentStrategy, null);
 
-        // Simpan "PDF" ke file
+        // Simpan file PDF (dummy text)
         receipt.saveToPDF();
+
+        // Simpan metadata ke database (Supabase)
+        receiptDAO.save(receipt);
 
         return receipt;
     }
@@ -214,8 +221,10 @@ public class PetCareFacade {
     }
 
     private String generateTransactionId(String orderId) {
-        return "TRX-" + orderId + "-" + System.currentTimeMillis();
+        // Contoh: TRX-1768956123456
+        return "TRX-" + System.currentTimeMillis();
     }
+    
 
     public CustomerManager getCustomerManager() {
         return customerManager;
@@ -227,5 +236,9 @@ public class PetCareFacade {
 
     public OrderManager getOrderManager() {
         return orderManager;
+    }
+
+    public ReceiptDAO getReceiptDAO() {
+        return receiptDAO;
     }
 }
