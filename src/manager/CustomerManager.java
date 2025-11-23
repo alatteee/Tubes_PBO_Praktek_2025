@@ -21,7 +21,6 @@ public class CustomerManager {
      * Dipakai oleh PetCareFacade (tanpa dependency injection eksplisit).
      */
     public CustomerManager() {
-        // PENTING: gunakan implementasi JDBC, bukan interface langsung
         this.customerDAO = new JdbcCustomerDAO();
     }
 
@@ -41,10 +40,9 @@ public class CustomerManager {
             throw new IllegalArgumentException("Nomor telepon tidak boleh kosong.");
         }
 
-        // Generate ID sederhana (boleh diganti IDGenerator kalau nanti ada)
-        String id = "CUST-" + System.currentTimeMillis();
+        // Generate ID baru, pendek, misal: C-0123
+        String id = generateCustomerId();
 
-        // Buat objek Customer dan validasi format telepon melalui isValid()
         Customer newCustomer = new Customer(id, name, phone);
 
         if (!newCustomer.isValid()) {
@@ -52,17 +50,44 @@ public class CustomerManager {
                     "Data pelanggan tidak valid. Nama tidak boleh kosong dan format nomor telepon salah.");
         }
 
-        // Simpan ke DB via DAO (Supabase)
         return customerDAO.save(newCustomer);
     }
 
     /**
-     * Mengambil data pelanggan berdasarkan ID.
-     *
-     * @param id ID customer.
-     * @return Customer jika ditemukan, atau null jika tidak.
-     * @throws IllegalArgumentException jika ID kosong.
+     * Generate ID customer pendek: C-0000 s/d C-9999.
+     * Loop sampai ketemu ID yang belum dipakai (cek ke database).
      */
+    private String generateCustomerId() {
+        // Ambil semua customer dari DB
+        List<Customer> all = customerDAO.findAll();
+    
+        int max = 0;
+        for (Customer c : all) {
+            String id = c.getCustomerId();   // contoh lama: CUST-..., contoh baru: cust01
+            if (id == null) continue;
+    
+            String lower = id.toLowerCase();
+            if (lower.startsWith("cust")) {
+                String numPart = id.substring(4); // ambil setelah "cust"
+                try {
+                    int n = Integer.parseInt(numPart);
+                    if (n > max) max = n;
+                } catch (NumberFormatException ignore) {
+                    // abaikan ID lama yang formatnya beda
+                }
+            }
+        }
+    
+        int next = max + 1;
+    
+        // 01..99 pakai 2 digit, 100 ke atas tanpa padding
+        String numStr = (next < 100)
+                ? String.format("%02d", next)
+                : String.valueOf(next);
+    
+        return "cust" + numStr;   // hasil: cust01, cust02, ..., cust100, ...
+    }    
+
     public Customer getCustomerById(String id) {
         if (id == null || id.trim().isEmpty()) {
             throw new IllegalArgumentException("Customer ID tidak boleh kosong.");
@@ -70,10 +95,6 @@ public class CustomerManager {
         return customerDAO.findById(id);
     }
 
-    /**
-     * Mengambil semua daftar pelanggan.
-     * (Generic Programming: List<Customer>)
-     */
     public List<Customer> getAllCustomers() {
         return customerDAO.findAll();
     }

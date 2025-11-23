@@ -123,21 +123,48 @@ public class PetCareFacade {
 
         ServiceStrategy serviceStrategy = createServiceStrategy(serviceType);
 
-        return orderManager.createOrder(pet, owner, serviceStrategy, entry, exit);
+        // Buat order baru
+        ServiceOrder order = orderManager.createOrder(pet, owner, serviceStrategy, entry, exit);
+
+        // Tandai pet sedang dalam proses layanan (status awal)
+        pet.setStatus("Menunggu layanan");
+        petManager.update(pet);
+
+        return order;
     }
 
     public void startService(String orderId) {
         if (orderId == null || orderId.isBlank()) {
             throw new IllegalArgumentException("Order ID tidak boleh kosong");
         }
+
+        // Update status order
         orderManager.updateStatus(orderId, "Sedang dikerjakan");
+
+        // Update status pet juga
+        ServiceOrder order = orderManager.getOrderById(orderId);
+        if (order != null && order.getPet() != null) {
+            Pet pet = order.getPet();
+            pet.setStatus("Sedang dikerjakan");
+            petManager.update(pet);
+        }
     }
 
     public void finishService(String orderId) {
         if (orderId == null || orderId.isBlank()) {
             throw new IllegalArgumentException("Order ID tidak boleh kosong");
         }
+
+        // Update status order
         orderManager.updateStatus(orderId, "Selesai");
+
+        // Pet sudah selesai layanan, tinggal menunggu checkout
+        ServiceOrder order = orderManager.getOrderById(orderId);
+        if (order != null && order.getPet() != null) {
+            Pet pet = order.getPet();
+            pet.setStatus("Menunggu checkout");
+            petManager.update(pet);
+        }
     }
 
     public List<ServiceOrder> getActiveOrders() {
@@ -191,7 +218,7 @@ public class PetCareFacade {
 
         Receipt receipt = new Receipt(txId, now, order, paymentStrategy, null);
 
-        // Simpan file PDF (dummy text)
+        // Simpan file PDF
         receipt.saveToPDF();
 
         // Simpan metadata ke database (Supabase)
@@ -224,7 +251,8 @@ public class PetCareFacade {
         // Contoh: TRX-1768956123456
         return "TRX-" + System.currentTimeMillis();
     }
-    
+
+    // ===================== Getter untuk GUI / Testing =====================
 
     public CustomerManager getCustomerManager() {
         return customerManager;

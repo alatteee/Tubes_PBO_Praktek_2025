@@ -13,8 +13,8 @@ import manager.PetManager;
 import manager.OrderManager;
 import model.Customer;
 import model.Pet;
-import model.ServiceOrder;
 import model.Receipt;
+import model.ServiceOrder;
 import strategy.payment.CashPayment;
 import strategy.payment.EWalletPayment;
 import strategy.payment.PaymentStrategy;
@@ -23,6 +23,9 @@ import strategy.payment.TransferPayment;
 public class MainFrame extends JFrame {
 
     private final PetCareFacade facade;
+
+    // supaya bisa ganti tab dari listener
+    private JTabbedPane tabbedPane;
 
     // --- Komponen Customer/Pet tab ---
     private JTextField txtCustName;
@@ -35,6 +38,7 @@ public class MainFrame extends JFrame {
     private JButton btnAddPet;
     private JTable tblCustomers;
     private JTable tblPets;
+    private JButton btnAddToService;   // tombol untuk kirim Pet ke tab Service
 
     // --- Komponen Service Order tab ---
     private JTextField txtPetId;
@@ -67,7 +71,7 @@ public class MainFrame extends JFrame {
         setSize(1000, 650);
         setLocationRelativeTo(null);
 
-        JTabbedPane tabbedPane = new JTabbedPane();
+        tabbedPane = new JTabbedPane();
         tabbedPane.addTab("Customer & Pet", createCustomerPetPanel());
         tabbedPane.addTab("Service Order", createServiceOrderPanel());
         tabbedPane.addTab("Checkout", createCheckoutPanel());
@@ -120,6 +124,8 @@ public class MainFrame extends JFrame {
 
         JLabel lblOwnerId = new JLabel("Owner ID:");
         txtOwnerId = new JTextField(10);
+        txtOwnerId.setEditable(false); // Owner diisi otomatis dari tabel Customer
+
         JLabel lblPetType = new JLabel("Type:");
         cbPetType = new JComboBox<>(new String[]{"Cat", "Dog", "Rabbit"});
         JLabel lblPetName = new JLabel("Pet Name:");
@@ -174,8 +180,14 @@ public class MainFrame extends JFrame {
         );
         splitTables.setResizeWeight(0.5);
 
+        // Panel bawah: tombol "Add to Service Order"
+        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        btnAddToService = new JButton("Add to Service Order");
+        bottomPanel.add(btnAddToService);
+
         panel.add(topForms, BorderLayout.NORTH);
         panel.add(splitTables, BorderLayout.CENTER);
+        panel.add(bottomPanel, BorderLayout.SOUTH);
         return panel;
     }
 
@@ -193,6 +205,8 @@ public class MainFrame extends JFrame {
 
         JLabel lblPetId = new JLabel("Pet ID:");
         txtPetId = new JTextField(10);
+        txtPetId.setEditable(false); // diisi dari tombol di tab Customer & Pet
+
         JLabel lblServiceType = new JLabel("Service Type:");
         cbServiceType = new JComboBox<>(new String[]{"Grooming", "Boarding", "Medical"});
         JLabel lblEntry = new JLabel("Entry (yyyy-MM-dd HH:mm):");
@@ -310,12 +324,56 @@ public class MainFrame extends JFrame {
                 JOptionPane.showMessageDialog(this, "Pet registered");
                 txtPetName.setText("");
                 txtPetAge.setText("");
-                loadPets(); // nanti bisa khusus by owner
+                // Owner ID dibiarkan, supaya bisa tambah beberapa pet untuk owner yang sama
+                loadPets();
             } catch (NumberFormatException nfe) {
                 JOptionPane.showMessageDialog(this, "Age harus angka", "Input Error", JOptionPane.ERROR_MESSAGE);
             } catch (Exception ex) {
                 showError(ex);
             }
+        });
+
+        // Klik baris customer -> isi Owner ID otomatis
+        tblCustomers.getSelectionModel().addListSelectionListener(e -> {
+            if (e.getValueIsAdjusting()) return;
+
+            int row = tblCustomers.getSelectedRow();
+            if (row >= 0) {
+                Object value = tblCustomers.getValueAt(row, 0); // kolom 0 = Customer ID
+                if (value != null) {
+                    txtOwnerId.setText(value.toString());
+                }
+            }
+        });
+
+        // Tombol "Add to Service Order"
+        btnAddToService.addActionListener(e -> {
+            int row = tblPets.getSelectedRow();
+            if (row == -1) {
+                JOptionPane.showMessageDialog(this,
+                        "Pilih dulu salah satu pet di tabel.",
+                        "No Pet Selected",
+                        JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            Object value = tblPets.getValueAt(row, 0); // kolom 0 = Pet ID
+            if (value != null) {
+                txtPetId.setText(value.toString());
+            }
+
+            // isi Entry otomatis dengan waktu sekarang
+            LocalDateTime now = LocalDateTime.now();
+            txtEntry.setText(now.format(dtFormatter));
+            txtExit.setText(""); // kosongin exit biar jelas
+
+            // pindah ke tab Service Order (index 1)
+            if (tabbedPane != null && tabbedPane.getTabCount() > 1) {
+                tabbedPane.setSelectedIndex(1);
+            }
+
+            // fokus ke entry time (kalau mau di-edit sama user)
+            txtEntry.requestFocus();
         });
 
         // Create Order
@@ -336,6 +394,7 @@ public class MainFrame extends JFrame {
                 JOptionPane.showMessageDialog(this, "Order created");
                 loadActiveOrders();
                 loadCheckoutOrders();
+                loadPets(); // status pet berubah -> refresh tabel pet
             } catch (Exception ex) {
                 showError(ex);
             }
@@ -354,6 +413,7 @@ public class MainFrame extends JFrame {
                 JOptionPane.showMessageDialog(this, "Service started");
                 loadActiveOrders();
                 loadCheckoutOrders();
+                loadPets(); // status pet "Sedang dikerjakan"
             } catch (Exception ex) {
                 showError(ex);
             }
@@ -372,6 +432,7 @@ public class MainFrame extends JFrame {
                 JOptionPane.showMessageDialog(this, "Service finished");
                 loadActiveOrders();
                 loadCheckoutOrders();
+                loadPets(); // status pet "Menunggu checkout"
             } catch (Exception ex) {
                 showError(ex);
             }
@@ -397,6 +458,7 @@ public class MainFrame extends JFrame {
 
                 loadActiveOrders();
                 loadCheckoutOrders();
+                loadPets(); // status pet balik "Tidak dalam layanan"
             } catch (Exception ex) {
                 showError(ex);
             }
@@ -410,11 +472,11 @@ public class MainFrame extends JFrame {
         loadCheckoutOrders();
     }
 
-    // === Loader tabel (silakan sesuaikan dengan Manager/DAO kalian) ===
+    // === Loader tabel ===
     private void loadCustomers() {
         try {
             CustomerManager cm = facade.getCustomerManager();
-            List<Customer> customers = cm.getAllCustomers(); // TODO: pastikan method ini ada
+            List<Customer> customers = cm.getAllCustomers();
             DefaultTableModel model = (DefaultTableModel) tblCustomers.getModel();
             model.setRowCount(0);
             for (Customer c : customers) {
@@ -425,7 +487,6 @@ public class MainFrame extends JFrame {
                 });
             }
         } catch (Exception e) {
-            // boleh di-silent atau ditampilkan
             e.printStackTrace();
         }
     }
@@ -441,7 +502,6 @@ public class MainFrame extends JFrame {
                         p.getPetId(),
                         p.getName(),
                         p.getClass().getSimpleName(),
-                        // kolom "Owner ID" → langsung pakai ownerId dari Pet
                         p.getOwnerId(),
                         p.getStatus()
                 });
@@ -449,7 +509,7 @@ public class MainFrame extends JFrame {
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }    
+    }
 
     private void loadActiveOrders() {
         try {
@@ -473,10 +533,8 @@ public class MainFrame extends JFrame {
 
     private void loadCheckoutOrders() {
         try {
-            // Sederhana: pakai getActiveOrders() lalu filter di facade/Manager,
-            // atau kamu buat method khusus getFinishedOrders().
             OrderManager om = facade.getOrderManager();
-            List<ServiceOrder> finished = om.getFinishedOrders(); // TODO: pastikan method ini ada / ganti
+            List<ServiceOrder> finished = om.getFinishedOrders();
             DefaultTableModel model = (DefaultTableModel) tblCheckoutOrders.getModel();
             model.setRowCount(0);
             for (ServiceOrder o : finished) {

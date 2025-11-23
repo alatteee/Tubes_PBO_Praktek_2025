@@ -1,7 +1,6 @@
 package dao;
 
 import model.Customer;
-
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -47,13 +46,14 @@ public class JdbcCustomerDAO implements CustomerDAO {
             return null;
 
         } catch (SQLException e) {
-            throw new RuntimeException("Gagal mencari customer dengan id: " + id, e);
+            throw new RuntimeException("Gagal menemukan customer dengan id: " + id, e);
         }
     }
 
     @Override
     public List<Customer> findAll() {
-        String sql = "SELECT id, name, phone FROM customers ORDER BY name";
+        // SUDAH DIURUTKAN ASCENDING BERDASARKAN ID
+        String sql = "SELECT id, name, phone FROM customers ORDER BY id ASC";
 
         List<Customer> result = new ArrayList<>();
 
@@ -85,8 +85,7 @@ public class JdbcCustomerDAO implements CustomerDAO {
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, id);
-            int affected = ps.executeUpdate();
-            return affected > 0;
+            return ps.executeUpdate() > 0;
 
         } catch (SQLException e) {
             throw new RuntimeException("Gagal menghapus customer dengan id: " + id, e);
@@ -104,12 +103,8 @@ public class JdbcCustomerDAO implements CustomerDAO {
             ps.setString(2, customer.getPhone());
             ps.setString(3, customer.getCustomerId());
 
-            int affected = ps.executeUpdate();
-            if (affected > 0) {
-                return customer;
-            } else {
-                return null;
-            }
+            int rows = ps.executeUpdate();
+            return rows > 0 ? customer : null;
 
         } catch (SQLException e) {
             throw new RuntimeException("Gagal mengupdate customer dengan id: " + customer.getCustomerId(), e);

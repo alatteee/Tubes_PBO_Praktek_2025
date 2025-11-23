@@ -6,14 +6,14 @@ package model;
  */
 public abstract class Pet {
 
-    // Field-field data inti yang bersifat immutable (final).
-    private final String petId;
-    private final String name;
-    private final int age;
-    private final String ownerId; // Foreign Key ke Customer
+    // Field inti harus bisa di-set ulang saat load dari database (TIDAK final).
+    protected String petId;
+    protected String name;
+    protected int age;
+    protected String ownerId; // Foreign Key ke Customer
 
-    // Field status bisa berubah (mutable), tidak menggunakan 'final'.
-    private String status = "Tidak dalam layanan";
+    // Field status bisa berubah (mutable).
+    protected String status = "Tidak dalam layanan";
 
     /**
      * Konstruktor untuk Pet.
@@ -24,32 +24,23 @@ public abstract class Pet {
      * @throws IllegalArgumentException jika umur negatif atau ownerId tidak valid.
      */
     public Pet(String petId, String name, int age, String ownerId) {
-        // Exception Handling (BR-04)
         if (age < 0) {
             throw new IllegalArgumentException("Umur hewan tidak boleh negatif.");
         }
-        // Validasi kepemilikan (BR-02)
         if (ownerId == null || ownerId.trim().isEmpty()) {
             throw new IllegalArgumentException("Setiap hewan harus memiliki ID pemilik.");
         }
-        
+
         this.petId = petId;
         this.name = name;
         this.age = age;
         this.ownerId = ownerId;
     }
 
-    // --- ABSTRACT METHOD (BR-15) ---
-    
-    /**
-     * Mendapatkan harga dasar untuk layanan berdasarkan jenis hewan.
-     * Harus diimplementasikan oleh subclass (Cat, Dog, Rabbit).
-     * @return Harga dasar layanan dalam double.
-     */
+    // --- ABSTRACT METHOD ---
     public abstract double getBasePrice();
 
     // --- GETTERS ---
-    
     public String getPetId() {
         return petId;
     }
@@ -70,12 +61,29 @@ public abstract class Pet {
         return status;
     }
 
-    // --- SETTER STATUS (Digunakan oleh OrderManager/Facade saat layanan dimulai/selesai) ---
-    
+    // --- SETTERS (Diperlukan untuk JDBC DAO) ---
+
+    public void setPetId(String petId) {
+        this.petId = petId;
+    }
+
+    public void setOwnerId(String ownerId) {
+        this.ownerId = ownerId;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setAge(int age) {
+        if (age < 0) throw new IllegalArgumentException("Umur hewan tidak boleh negatif.");
+        this.age = age;
+    }
+
     public void setStatus(String status) {
         this.status = status;
     }
-    
+
     @Override
     public String toString() {
         return "Pet{" +

@@ -1,44 +1,87 @@
 package factory;
 
+import java.util.List;
+
+import dao.JdbcPetDAO;
 import model.Cat;
 import model.Dog;
-import model.Pet;
 import model.Rabbit;
-import java.util.UUID;
+import model.Pet;
 
-/**
- * Kelas utilitas yang bertanggung jawab untuk membuat objek Pet.
- * Menerapkan Design Pattern: Factory Method (Simple Factory).
- */
+
 public class PetFactory {
 
     /**
-     * Membuat objek Pet (Cat, Dog, atau Rabbit) berdasarkan tipe yang diberikan.
-     * @param type Jenis hewan ("Cat", "Dog", "Rabbit").
-     * @param name Nama hewan.
-     * @param age Umur hewan.
-     * @param ownerId ID pemilik hewan (Foreign Key).
-     * @return Objek Pet yang spesifik.
-     * @throws IllegalArgumentException jika jenis hewan tidak dikenali.
+     * Factory method untuk membuat Pet sesuai jenisnya.
+     * ID sekarang pendek dan punya prefix per jenis:
+     * Cat    -> C-xxxx
+     * Dog    -> D-xxxx
+     * Rabbit -> R-xxxx
      */
-    public static Pet createPet(String type, String name, int age, String ownerId) throws IllegalArgumentException {
-        // Menggunakan UUID sebagai placeholder ID sementara sebelum disimpan ke DB oleh DAO.
-        String tempId = UUID.randomUUID().toString();
+    public static Pet createPet(String type, String name, int age, String ownerId) {
+        String id = generatePetId(type);
 
-        if (type == null) {
-            throw new IllegalArgumentException("Jenis hewan tidak boleh kosong.");
-        }
-
-        switch (type.toLowerCase()) {
+        String t = type.toLowerCase();
+        switch (t) {
             case "cat":
-                return new Cat(tempId, name, age, ownerId);
+                return new Cat(id, name, age, ownerId);
             case "dog":
-                return new Dog(tempId, name, age, ownerId);
+                return new Dog(id, name, age, ownerId);
             case "rabbit":
-                return new Rabbit(tempId, name, age, ownerId);
+                return new Rabbit(id, name, age, ownerId);
             default:
-                // Exception Handling (BR-03)
-                throw new IllegalArgumentException("Jenis hewan '" + type + "' tidak dikenali.");
+                // fallback: kalau ada jenis lain, pakai prefix P
+                return new Pet(id, name, age, ownerId) {
+                    @Override
+                    public double getBasePrice() {
+                        return 0;
+                    }
+                };
         }
     }
+
+    /**
+     * Generate ID Pet per jenis, contoh:
+     * Cat    -> C-0123
+     * Dog    -> D-0456
+     * Rabbit -> R-0789
+     */
+    private static String generatePetId(String type) {
+        String prefix;
+
+        switch (type.toLowerCase()) {
+            case "cat"    -> prefix = "cat";
+            case "dog"    -> prefix = "dog";
+            case "rabbit" -> prefix = "rab";
+            default       -> prefix = "pet";
+        }
+
+        JdbcPetDAO dao = new JdbcPetDAO();
+        List<Pet> allPets = dao.findAll();
+
+        int max = 0;
+        for (Pet p : allPets) {
+            String id = p.getPetId();   // contoh lama: UUID / C-xxxx, contoh baru: cat01
+            if (id == null) continue;
+
+            String lower = id.toLowerCase();
+            if (lower.startsWith(prefix)) {
+                String numPart = id.substring(prefix.length()); // ambil angka setelah prefix
+                try {
+                    int n = Integer.parseInt(numPart);
+                    if (n > max) max = n;
+                } catch (NumberFormatException ignore) {
+                    // abaikan ID lama yang formatnya beda
+                }
+            }
+        }
+
+        int next = max + 1;
+        String numStr = (next < 100)
+                ? String.format("%02d", next)   // 01..99
+                : String.valueOf(next);         // 100, 101, dst
+
+        return prefix + numStr;   // cat01, dog01, rab01, pet01, ...
+    }
+
 }
