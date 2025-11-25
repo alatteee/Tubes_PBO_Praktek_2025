@@ -24,4 +24,12 @@ public class DatabaseConnection {
     public static Connection getConnection() throws SQLException {
         return DriverManager.getConnection(URL, USER, PASSWORD);
     }
+    
+    public static Connection getUncheckedConnection() {
+        try {
+            return getConnection();
+        } catch (SQLException e) {
+            throw new RuntimeException("Gagal terhubung ke database. Cek URL, user, atau password.", e);
+        }
+    }
 }

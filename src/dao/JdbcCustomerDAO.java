@@ -11,7 +11,7 @@ public class JdbcCustomerDAO implements CustomerDAO {
     public Customer save(Customer customer) {
         String sql = "INSERT INTO customers (id, name, phone) VALUES (?, ?, ?)";
 
-        try (Connection conn = DatabaseConnection.getConnection();
+        try (Connection conn = DatabaseConnection.getUncheckedConnection(); 
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, customer.getCustomerId());
@@ -30,7 +30,7 @@ public class JdbcCustomerDAO implements CustomerDAO {
     public Customer findById(String id) {
         String sql = "SELECT id, name, phone FROM customers WHERE id = ?";
 
-        try (Connection conn = DatabaseConnection.getConnection();
+        try (Connection conn = DatabaseConnection.getUncheckedConnection(); 
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, id);
@@ -57,7 +57,7 @@ public class JdbcCustomerDAO implements CustomerDAO {
 
         List<Customer> result = new ArrayList<>();
 
-        try (Connection conn = DatabaseConnection.getConnection();
+        try (Connection conn = DatabaseConnection.getUncheckedConnection(); 
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
 
@@ -81,7 +81,7 @@ public class JdbcCustomerDAO implements CustomerDAO {
     public boolean delete(String id) {
         String sql = "DELETE FROM customers WHERE id = ?";
 
-        try (Connection conn = DatabaseConnection.getConnection();
+        try (Connection conn = DatabaseConnection.getUncheckedConnection(); 
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, id);
@@ -96,7 +96,7 @@ public class JdbcCustomerDAO implements CustomerDAO {
     public Customer update(Customer customer) {
         String sql = "UPDATE customers SET name = ?, phone = ? WHERE id = ?";
 
-        try (Connection conn = DatabaseConnection.getConnection();
+        try (Connection conn = DatabaseConnection.getUncheckedConnection(); 
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, customer.getName());

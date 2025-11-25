@@ -61,12 +61,12 @@ public class JdbcReceiptDAO implements ReceiptDAO {
     @Override
     public Receipt save(Receipt receipt) {
         String sql = """
-                INSERT INTO receipts
-                (transaction_id, order_id, payment_method, pdf_path, transaction_time)
-                VALUES (?, ?, ?, ?, ?)
-                """;
+                 INSERT INTO receipts
+                 (transaction_id, order_id, payment_method, pdf_path, transaction_time)
+                 VALUES (?, ?, ?, ?, ?)
+                 """;
 
-        try (Connection conn = DatabaseConnection.getConnection();
+        try (Connection conn = DatabaseConnection.getUncheckedConnection(); 
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, receipt.getTransactionId());
@@ -87,7 +87,7 @@ public class JdbcReceiptDAO implements ReceiptDAO {
     public Receipt findById(String transactionId) {
         String sql = "SELECT * FROM receipts WHERE transaction_id = ?";
 
-        try (Connection conn = DatabaseConnection.getConnection();
+        try (Connection conn = DatabaseConnection.getUncheckedConnection(); 
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, transactionId);
@@ -113,7 +113,7 @@ public class JdbcReceiptDAO implements ReceiptDAO {
 
         List<Receipt> result = new ArrayList<>();
 
-        try (Connection conn = DatabaseConnection.getConnection();
+        try (Connection conn = DatabaseConnection.getUncheckedConnection(); 
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, order.getOrderId());

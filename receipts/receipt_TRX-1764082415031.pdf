@@ -1,0 +1,73 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842]
+   /Resources << /Font << /F1 4 0 R >> >>
+   /Contents 5 0 R >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+5 0 obj
+<< /Length 755 >>
+stream
+BT
+/F1 12 Tf
+72 800 Td
+18 TL
+(         PET CARE SYSTEM RECEIPT         ) Tj
+T*
+(        Politeknik Negeri Bandung        ) Tj
+T*
+(========================================) Tj
+T*
+(Transaction : TRX-1764082415031) Tj
+T*
+(Date/Time   : 25-11-2025 21:53:35) Tj
+T*
+(----------------------------------------) Tj
+T*
+(ORDER INFO) Tj
+T*
+(Order ID    : ORD-f9a3eb43-4ee2-443a-bdf0-2fecba95fbaf) Tj
+T*
+(Customer    : alaa) Tj
+T*
+(Pet         : tuki \(Rabbit\)) Tj
+T*
+(Service     : Grooming) Tj
+T*
+(Total       : Rp 50000) Tj
+T*
+(Payment     : Transfer Bank) Tj
+T*
+(========================================) Tj
+T*
+(           THANK YOU FOR VISITING        ) Tj
+T*
+(          Thank you for your trust!      ) Tj
+T*
+(========================================) Tj
+T*
+ET
+endstream
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000121 00000 n 
+0000000253 00000 n 
+0000000323 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1128
+%%EOF

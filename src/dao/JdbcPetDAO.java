@@ -16,7 +16,7 @@ public class JdbcPetDAO implements PetDAO {
         String sql = "INSERT INTO pets (id, name, type, age, status, owner_id) " +
                      "VALUES (?, ?, ?, ?, ?, ?)";
 
-        try (Connection conn = DatabaseConnection.getConnection();
+        try (Connection conn = DatabaseConnection.getUncheckedConnection(); // PERUBAHAN DI SINI
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, pet.getPetId());
@@ -39,7 +39,7 @@ public class JdbcPetDAO implements PetDAO {
         String sql = "SELECT id, name, type, age, status, owner_id " +
                      "FROM pets WHERE id = ?";
 
-        try (Connection conn = DatabaseConnection.getConnection();
+        try (Connection conn = DatabaseConnection.getUncheckedConnection(); // PERUBAHAN DI SINI
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, id);
@@ -63,7 +63,7 @@ public class JdbcPetDAO implements PetDAO {
 
         List<Pet> result = new ArrayList<>();
 
-        try (Connection conn = DatabaseConnection.getConnection();
+        try (Connection conn = DatabaseConnection.getUncheckedConnection(); 
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
 
@@ -86,7 +86,7 @@ public class JdbcPetDAO implements PetDAO {
 
         List<Pet> result = new ArrayList<>();
 
-        try (Connection conn = DatabaseConnection.getConnection();
+        try (Connection conn = DatabaseConnection.getUncheckedConnection(); 
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, ownerId);
@@ -108,7 +108,7 @@ public class JdbcPetDAO implements PetDAO {
     public boolean delete(String id) {
         String sql = "DELETE FROM pets WHERE id = ?";
 
-        try (Connection conn = DatabaseConnection.getConnection();
+        try (Connection conn = DatabaseConnection.getUncheckedConnection(); 
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, id);
@@ -125,7 +125,7 @@ public class JdbcPetDAO implements PetDAO {
         String sql = "UPDATE pets SET name = ?, type = ?, age = ?, status = ?, owner_id = ? " +
                      "WHERE id = ?";
 
-        try (Connection conn = DatabaseConnection.getConnection();
+        try (Connection conn = DatabaseConnection.getUncheckedConnection(); 
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, pet.getName());
