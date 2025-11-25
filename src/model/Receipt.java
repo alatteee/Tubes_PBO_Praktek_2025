@@ -22,12 +22,27 @@ public class Receipt {
     /**
      * Constructor lengkap sesuai spec:
      * pdfFilePath boleh null, nanti diisi otomatis oleh saveToPDF().
+     * DITAMBAH EXCEPTION HANDLING
      */
     public Receipt(String transactionId,
                    LocalDateTime transactionTime,
                    ServiceOrder order,
                    PaymentStrategy payment,
                    String pdfFilePath) {
+
+        // ========== VALIDASI WAJIB ==========
+        if (transactionId == null || transactionId.isBlank()) {
+            throw new IllegalArgumentException("Receipt Error: transactionId tidak boleh kosong.");
+        }
+        if (transactionTime == null) {
+            throw new IllegalArgumentException("Receipt Error: transactionTime tidak boleh null.");
+        }
+        if (order == null) {
+            throw new IllegalArgumentException("Receipt Error: order tidak boleh null.");
+        }
+        if (payment == null) {
+            throw new IllegalArgumentException("Receipt Error: payment tidak boleh null.");
+        }
 
         this.transactionId = transactionId;
         this.transactionTime = transactionTime;
@@ -37,105 +52,91 @@ public class Receipt {
     }
 
     // Getters
+    public String getTransactionId() { return transactionId; }
+    public LocalDateTime getTransactionTime() { return transactionTime; }
+    public ServiceOrder getOrder() { return order; }
+    public PaymentStrategy getPayment() { return payment; }
+    public String getPdfFilePath() { return pdfFilePath; }
 
-    public String getTransactionId() {
-        return transactionId;
-    }
-
-    public LocalDateTime getTransactionTime() {
-        return transactionTime;
-    }
-
-    public ServiceOrder getOrder() {
-        return order;
-    }
-
-    public PaymentStrategy getPayment() {
-        return payment;
-    }
-
-    public String getPdfFilePath() {
-        return pdfFilePath;
-    }
-
+    /**
+     * Setter PDF path — DITAMBAH VALIDASI
+     */
     public void setPdfFilePath(String path) {
+        if (path == null || path.isBlank()) {
+            throw new IllegalArgumentException("Receipt Error: pdfFilePath tidak boleh kosong/null.");
+        }
         this.pdfFilePath = path;
     }
 
     /**
-     * Membuat teks struk untuk ditampilkan di GUI atau disimpan ke file.
+     * Membuat teks struk.
+     * DITAMBAH VALIDASI agar tidak NPE saat akses order atau komponen lain.
      */
     public String generateReceiptText() {
+
+        if (order == null) {
+            throw new IllegalStateException("Receipt Error: Order belum di-set.");
+        }
+        if (order.getService() == null) {
+            throw new IllegalStateException("Receipt Error: Layanan pada order tidak boleh null.");
+        }
+        if (order.getTotalCost() <= 0) {
+            throw new IllegalStateException("Receipt Error: Total biaya belum dihitung.");
+        }
+
         StringBuilder sb = new StringBuilder();
-    
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
-    
-        // ==== HEADER TOKO / PET CARE ====
+
+        // ==== HEADER ====
         sb.append("         PET CARE SYSTEM RECEIPT         \n");
         sb.append("        Politeknik Negeri Bandung        \n");
         sb.append("========================================\n");
-    
+
         // ==== INFO TRANSAKSI ====
         sb.append(String.format("%-12s: %s%n", "Transaction", transactionId));
         sb.append(String.format("%-12s: %s%n", "Date/Time",
                 dtf.format(transactionTime)));
         sb.append("----------------------------------------\n");
-    
+
         // ==== INFO ORDER ====
-        if (order != null) {
-            sb.append("ORDER INFO\n");
-    
-            sb.append(String.format("%-12s: %s%n", "Order ID", order.getOrderId()));
-    
-            if (order.getCustomer() != null) {
-                sb.append(String.format(
-                        "%-12s: %s%n",
-                        "Customer",
-                        order.getCustomer().getName()
-                ));
-            }
-    
-            if (order.getPet() != null) {
-                sb.append(String.format(
-                        "%-12s: %s (%s)%n",
-                        "Pet",
-                        order.getPet().getName(),
-                        order.getPet().getClass().getSimpleName()
-                ));
-            }
-    
-            if (order.getService() != null) {
-                sb.append(String.format("%-12s: %s%n",
-                        "Service",
-                        order.getService().getName()));
-            }
-    
-            sb.append(String.format("%-12s: Rp %.0f%n",
-                    "Total",
-                    order.getTotalCost()));
-        }
-    
-        // ==== PAYMENT ====
-        if (payment != null) {
+        sb.append("ORDER INFO\n");
+
+        sb.append(String.format("%-12s: %s%n", "Order ID", order.getOrderId()));
+
+        if (order.getCustomer() != null) {
             sb.append(String.format("%-12s: %s%n",
-                    "Payment",
-                    payment.getName()));
+                    "Customer", order.getCustomer().getName()));
         }
-    
+
+        if (order.getPet() != null) {
+            sb.append(String.format("%-12s: %s (%s)%n",
+                    "Pet",
+                    order.getPet().getName(),
+                    order.getPet().getClass().getSimpleName()));
+        }
+
+        sb.append(String.format("%-12s: %s%n",
+                "Service",
+                order.getService().getName()));
+
+        sb.append(String.format("%-12s: Rp %.0f%n",
+                "Total",
+                order.getTotalCost()));
+
+        // ==== PAYMENT ====
+        sb.append(String.format("%-12s: %s%n",
+                "Payment",
+                payment.getName()));
+
         sb.append("========================================\n");
         sb.append("           THANK YOU FOR VISITING        \n");
         sb.append("          Thank you for your trust!      \n");
         sb.append("========================================\n");
-    
+
         return sb.toString();
     }
-    
 
     // ======================= PDF UTILS =======================
-
-    /**
-     * Escape karakter khusus untuk teks di PDF.
-     */
     private String escapePdfText(String text) {
         if (text == null) return "";
         return text
@@ -144,78 +145,84 @@ public class Receipt {
                 .replace(")", "\\)");
     }
 
-    // ======================= SAVE AS REAL PDF =======================
+    // ======================= SAVE AS PDF =======================
 
     /**
-     * Generate file PDF beneran (satu halaman, teks struk).
-     * Tanpa library eksternal, hanya pakai format PDF minimal.
+     * Ditambah exception handling untuk directory, file IO, dan parsing.
      */
     public void saveToPDF() {
+
+        // Pastikan transactionId valid
         String safeId = transactionId != null ? transactionId : "TRX-" + System.currentTimeMillis();
 
-        // Pastikan folder receipts ada
+        // Cek folder receipts
         String directoryPath = "receipts";
         File dir = new File(directoryPath);
-        if (!dir.exists()) {
-            dir.mkdirs();
+        if (!dir.exists() && !dir.mkdirs()) {
+            throw new RuntimeException("ERROR: Gagal membuat folder receipts.");
         }
 
+        // Tentukan file output
         String fileName = "receipt_" + safeId + ".pdf";
         File outFile = new File(dir, fileName);
         this.pdfFilePath = outFile.getAbsolutePath();
 
-        // Siapkan konten teks dari receipt
-        String[] lines = generateReceiptText().split("\\r?\\n");
+        // Generate text — ini juga sudah punya exception
+        String[] lines;
+        try {
+            lines = generateReceiptText().split("\\r?\\n");
+        } catch (Exception e) {
+            throw new RuntimeException("Gagal membuat teks struk: " + e.getMessage(), e);
+        }
 
-        // Build content stream (PDF drawing commands)
+        // Bangun content PDF
         StringBuilder content = new StringBuilder();
-        content.append("BT\n");              // Begin Text
-        content.append("/F1 12 Tf\n");       // Font F1 size 12
-        content.append("72 800 Td\n");       // Position: x=72, y=800
-        content.append("18 TL\n");           // Line spacing 14
+        content.append("BT\n");
+        content.append("/F1 12 Tf\n");
+        content.append("72 800 Td\n");
+        content.append("18 TL\n");
 
         for (String line : lines) {
             content.append("(")
                    .append(escapePdfText(line))
-                   .append(") Tj\n");       // Show text
-            content.append("T*\n");         // Move to next line (using TL)
+                   .append(") Tj\n");
+            content.append("T*\n");
         }
-        content.append("ET\n");             // End Text
+        content.append("ET\n");
 
         byte[] contentBytes = content.toString().getBytes(StandardCharsets.ISO_8859_1);
         int contentLength = contentBytes.length;
 
+        // ==== I/O Handling ====
         try (FileOutputStream fos = new FileOutputStream(outFile)) {
 
-            // Header PDF
+            // (kode PDF builder kamu tetap dipertahankan)
+            // hanya exception di luar yang dibungkus RuntimeException
+
             String header = "%PDF-1.4\n" +
                             "%\u00e2\u00e3\u00cf\u00d3\n";
 
             List<String> objects = new ArrayList<>();
 
-            // 1: Catalog
+            // original objects (tidak dihapus, hanya diteruskan)
             objects.add("1 0 obj\n" +
                        "<< /Type /Catalog /Pages 2 0 R >>\n" +
                        "endobj\n");
 
-            // 2: Pages
             objects.add("2 0 obj\n" +
                        "<< /Type /Pages /Kids [3 0 R] /Count 1 >>\n" +
                        "endobj\n");
 
-            // 3: Page
             objects.add("3 0 obj\n" +
                        "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842]\n" +
                        "   /Resources << /Font << /F1 4 0 R >> >>\n" +
                        "   /Contents 5 0 R >>\n" +
                        "endobj\n");
 
-            // 4: Font
             objects.add("4 0 obj\n" +
                        "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\n" +
                        "endobj\n");
 
-            // 5: Content stream
             StringBuilder obj5 = new StringBuilder();
             obj5.append("5 0 obj\n");
             obj5.append("<< /Length ").append(contentLength).append(" >>\n");
@@ -223,9 +230,9 @@ public class Receipt {
             obj5.append(content);
             obj5.append("endstream\n");
             obj5.append("endobj\n");
+
             objects.add(obj5.toString());
 
-            // Build full PDF + hitung offset untuk xref
             StringBuilder pdfBuilder = new StringBuilder();
             pdfBuilder.append(header);
 
@@ -241,7 +248,6 @@ public class Receipt {
             int startXref = pdfBuilder.toString().getBytes(StandardCharsets.ISO_8859_1).length;
             int objCount = objects.size();
 
-            // XRef table
             StringBuilder xref = new StringBuilder();
             xref.append("xref\n");
             xref.append("0 ").append(objCount + 1).append("\n");
@@ -250,7 +256,6 @@ public class Receipt {
                 xref.append(String.format("%010d 00000 n \n", off));
             }
 
-            // Trailer
             StringBuilder trailer = new StringBuilder();
             trailer.append("trailer\n");
             trailer.append("<< /Size ").append(objCount + 1).append(" /Root 1 0 R >>\n");

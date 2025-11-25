@@ -24,7 +24,7 @@ public class PetManager {
      * Cocok dipakai oleh PetCareFacade.
      */
     public PetManager() {
-        this.petDAO = new JdbcPetDAO();   // <<--- tadinya new PetDAO() (salah)
+        this.petDAO = new JdbcPetDAO();
         this.petFactory = new PetFactory();
     }
 
@@ -37,55 +37,105 @@ public class PetManager {
      */
     public Pet registerPet(String type, String name, int age, Customer owner) {
 
+        // ===== VALIDASI INPUT DASAR =====
         if (owner == null) {
-            throw new IllegalArgumentException("Owner tidak boleh null");
+            throw new IllegalArgumentException("Owner tidak boleh null.");
+        }
+        if (type == null || type.isBlank()) {
+            throw new IllegalArgumentException("Jenis hewan tidak boleh kosong.");
         }
         if (name == null || name.isBlank()) {
-            throw new IllegalArgumentException("Nama hewan tidak boleh kosong");
+            throw new IllegalArgumentException("Nama hewan tidak boleh kosong.");
         }
         if (age < 0) {
-            throw new IllegalArgumentException("Umur hewan tidak boleh negatif");
+            throw new IllegalArgumentException("Umur hewan tidak boleh negatif.");
         }
 
-        // Buat Pet sesuai Factory Method Pattern
-        // PetFactory.createPet membutuhkan ownerId (String), bukan objek Customer
-        Pet pet = PetFactory.createPet(type, name, age, owner.getCustomerId());
+        // ===== CEK PET DUPLIKAT (optional tapi aman untuk BR-33) =====
+        try {
+            List<Pet> pets = petDAO.findByCustomer(owner.getCustomerId());
+            for (Pet p : pets) {
+                if (p.getName().equalsIgnoreCase(name.trim())) {
+                    // NOTE: Nama pet boleh sama jika pemilik berbeda,
+                    // tapi tidak boleh sama dalam 1 customer (good practice)
+                    throw new IllegalArgumentException(
+                        "Nama hewan sudah digunakan oleh customer ini."
+                    );
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Gagal memeriksa duplikasi nama hewan di database.", e);
+        }
 
-        // Pastikan status awal benar
+        // ===== BUAT PET (PAKAI FACTORY) =====
+        Pet pet;
+        try {
+            pet = PetFactory.createPet(type, name, age, owner.getCustomerId());
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Gagal membuat objek Pet: " + e.getMessage(), e);
+        }
+
+        // ===== PASTIKAN STATUS AWAL VALID =====
         if (pet.getStatus() == null || pet.getStatus().isBlank()) {
             pet.setStatus("Tidak dalam layanan");
         }
 
-        // Simpan Pet lewat DAO (Supabase)
-        return petDAO.save(pet);
+        // ===== SIMPAN KE DATABASE =====
+        try {
+            return petDAO.save(pet);
+        } catch (Exception e) {
+            throw new RuntimeException("Gagal menyimpan data Pet ke database: " + e.getMessage(), e);
+        }
     }
 
     /**
      * Ambil Pet berdasarkan ID.
      */
     public Pet getPetById(String petId) {
+
         if (petId == null || petId.isBlank()) {
-            throw new IllegalArgumentException("Pet ID tidak boleh kosong");
+            throw new IllegalArgumentException("Pet ID tidak boleh kosong.");
         }
-        return petDAO.findById(petId);
+
+        Pet pet;
+        try {
+            pet = petDAO.findById(petId);
+        } catch (Exception e) {
+            throw new RuntimeException("Gagal mengambil data Pet dari database.", e);
+        }
+
+        if (pet == null) {
+            throw new IllegalArgumentException("Pet dengan ID tersebut tidak ditemukan.");
+        }
+
+        return pet;
     }
 
     /**
      * Ambil semua Pet (untuk tabel GUI).
      */
     public List<Pet> getAllPets() {
-        return petDAO.findAll();
+        try {
+            return petDAO.findAll();
+        } catch (Exception e) {
+            throw new RuntimeException("Gagal mengambil daftar semua Pet.", e);
+        }
     }
 
     /**
      * Ambil daftar Pet milik Customer tertentu.
      */
     public List<Pet> getPetsByCustomer(Customer owner) {
+
         if (owner == null) {
-            throw new IllegalArgumentException("Owner tidak boleh null");
+            throw new IllegalArgumentException("Owner tidak boleh null.");
         }
-        // PetDAO.findByCustomer butuh ownerId (String)
-        return petDAO.findByCustomer(owner.getCustomerId());
+
+        try {
+            return petDAO.findByCustomer(owner.getCustomerId());
+        } catch (Exception e) {
+            throw new RuntimeException("Gagal mengambil daftar Pet milik customer.", e);
+        }
     }
 
     /**
@@ -93,9 +143,15 @@ public class PetManager {
      * Dipakai untuk checkout: status pet → "Tidak dalam layanan"
      */
     public Pet update(Pet pet) {
+
         if (pet == null) {
-            throw new IllegalArgumentException("Pet tidak boleh null");
+            throw new IllegalArgumentException("Pet tidak boleh null.");
         }
-        return petDAO.update(pet);
+
+        try {
+            return petDAO.update(pet);
+        } catch (Exception e) {
+            throw new RuntimeException("Gagal memperbarui data Pet di database.", e);
+        }
     }
 }

@@ -13,11 +13,32 @@ public class GroomingService implements ServiceStrategy {
 
     @Override
     public double calculatePrice(ServiceOrder order) {
+
+        // === EXCEPTION HANDLING DITAMBAHKAN ===
+        if (order == null) {
+            throw new IllegalArgumentException("Order tidak boleh null untuk menghitung harga grooming.");
+        }
+        if (PRICE <= 0) {
+            throw new IllegalStateException("Harga grooming tidak valid (0 atau negatif).");
+        }
+
         return PRICE;
     }
 
     @Override
     public void processService(ServiceOrder order) {
+
+        // === EXCEPTION HANDLING DITAMBAHKAN ===
+        if (order == null) {
+            throw new IllegalArgumentException("Order tidak boleh null saat memproses grooming.");
+        }
+        if (order.getPet() == null) {
+            throw new IllegalStateException("Pet tidak boleh null saat memproses grooming.");
+        }
+        if (order.getPet().getName() == null) {
+            throw new IllegalStateException("Nama pet tidak boleh null saat proses grooming.");
+        }
+
         System.out.println("Proses grooming untuk " + order.getPet().getName() + "...");
     }
 }

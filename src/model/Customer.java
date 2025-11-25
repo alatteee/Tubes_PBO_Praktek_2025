@@ -4,6 +4,9 @@ import java.util.regex.Pattern;
 
 /**
  * Merepresentasikan entitas Pelanggan (Customer).
+ * Menerapkan Business Rules:
+ * - Nama tidak boleh kosong
+ * - Nomor telepon minimal 10 digit, angka atau boleh awalan +62
  */
 public class Customer {
 
@@ -11,16 +14,27 @@ public class Customer {
     private final String name;
     private final String phone;
     
-    // Pattern untuk memvalidasi nomor telepon: Boleh diawali +62 atau 0, min 10 digit total.
+    // Regex: boleh +62 atau 0 di depan, minimal 10 digit total
     private static final Pattern PHONE_PATTERN = Pattern.compile("^(?:\\+62|0)?\\d{9,15}$");
 
     /**
-     * Konstruktor untuk membuat objek Customer.
-     * @param customerId ID unik pelanggan.
-     * @param name Nama pelanggan.
-     * @param phone Nomor telepon pelanggan.
+     * Konstruktor Customer dengan validasi langsung.
+     * Jika data tidak valid → lempar IllegalArgumentException.
      */
     public Customer(String customerId, String name, String phone) {
+
+        if (customerId == null || customerId.isBlank()) {
+            throw new IllegalArgumentException("Customer ID tidak boleh kosong.");
+        }
+
+        if (!isNameValid(name)) {
+            throw new IllegalArgumentException("Nama customer tidak boleh kosong.");
+        }
+
+        if (!isPhoneValid(phone)) {
+            throw new IllegalArgumentException("Nomor telepon tidak valid: " + phone);
+        }
+
         this.customerId = customerId;
         this.name = name;
         this.phone = phone;
@@ -37,10 +51,9 @@ public class Customer {
     public String getPhone() {
         return phone;
     }
-    
+
     /**
-     * Memeriksa apakah data Customer valid sesuai Business Rules (BR-05).
-     * @return true jika nama dan nomor telepon valid.
+     * Validasi untuk testing tambahan.
      */
     public boolean isValid() {
         return isNameValid(this.name) && isPhoneValid(this.phone);

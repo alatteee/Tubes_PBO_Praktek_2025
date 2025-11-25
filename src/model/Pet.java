@@ -6,27 +6,37 @@ package model;
  */
 public abstract class Pet {
 
-    // Field inti harus bisa di-set ulang saat load dari database (TIDAK final).
+    // Field inti tidak final agar bisa di-set ulang saat load dari database.
     protected String petId;
     protected String name;
     protected int age;
     protected String ownerId; // Foreign Key ke Customer
 
-    // Field status bisa berubah (mutable).
+    // Status default
     protected String status = "Tidak dalam layanan";
 
     /**
      * Konstruktor untuk Pet.
      * @param petId ID unik hewan.
      * @param name Nama hewan.
-     * @param age Umur hewan (harus >= 0).
-     * @param ownerId ID pelanggan pemilik hewan (harus diisi).
-     * @throws IllegalArgumentException jika umur negatif atau ownerId tidak valid.
+     * @param age Umur hewan (>= 0).
+     * @param ownerId ID pelanggan pemilik hewan.
+     * @throws IllegalArgumentException jika data tidak valid.
      */
     public Pet(String petId, String name, int age, String ownerId) {
+
+        if (petId == null || petId.trim().isEmpty()) {
+            throw new IllegalArgumentException("Pet ID tidak boleh kosong.");
+        }
+
+        if (name == null || name.trim().isEmpty()) {
+            throw new IllegalArgumentException("Nama hewan tidak boleh kosong.");
+        }
+
         if (age < 0) {
             throw new IllegalArgumentException("Umur hewan tidak boleh negatif.");
         }
+
         if (ownerId == null || ownerId.trim().isEmpty()) {
             throw new IllegalArgumentException("Setiap hewan harus memiliki ID pemilik.");
         }
@@ -61,26 +71,39 @@ public abstract class Pet {
         return status;
     }
 
-    // --- SETTERS (Diperlukan untuk JDBC DAO) ---
-
+    // --- SETTERS (Perlu untuk JDBC DAO) ---
     public void setPetId(String petId) {
+        if (petId == null || petId.trim().isEmpty()) {
+            throw new IllegalArgumentException("Pet ID tidak boleh kosong.");
+        }
         this.petId = petId;
     }
 
     public void setOwnerId(String ownerId) {
+        if (ownerId == null || ownerId.trim().isEmpty()) {
+            throw new IllegalArgumentException("Owner ID tidak boleh kosong.");
+        }
         this.ownerId = ownerId;
     }
 
     public void setName(String name) {
+        if (name == null || name.trim().isEmpty()) {
+            throw new IllegalArgumentException("Nama hewan tidak boleh kosong.");
+        }
         this.name = name;
     }
 
     public void setAge(int age) {
-        if (age < 0) throw new IllegalArgumentException("Umur hewan tidak boleh negatif.");
+        if (age < 0) {
+            throw new IllegalArgumentException("Umur hewan tidak boleh negatif.");
+        }
         this.age = age;
     }
 
     public void setStatus(String status) {
+        if (status == null || status.trim().isEmpty()) {
+            throw new IllegalArgumentException("Status hewan tidak boleh kosong.");
+        }
         this.status = status;
     }
 

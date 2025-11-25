@@ -18,6 +18,11 @@ public class Dog extends Pet {
      */
     public Dog(String petId, String name, int age, String ownerId) {
         super(petId, name, age, ownerId);
+
+        // VALIDASI BASE PRICE
+        if (BASE_PRICE <= 0) {
+            throw new IllegalStateException("Base price untuk Dog tidak boleh 0 atau negatif.");
+        }
     }
 
     /**
@@ -26,6 +31,10 @@ public class Dog extends Pet {
      */
     @Override
     public double getBasePrice() {
+        // Proteksi tambahan saat runtime
+        if (BASE_PRICE <= 0) {
+            throw new IllegalStateException("Base price untuk Dog tidak valid (0 atau negatif).");
+        }
         return BASE_PRICE;
     }
 }

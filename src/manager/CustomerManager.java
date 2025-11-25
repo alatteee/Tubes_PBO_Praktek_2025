@@ -33,69 +33,110 @@ public class CustomerManager {
      * @throws IllegalArgumentException jika data tidak valid.
      */
     public Customer registerCustomer(String name, String phone) {
+
+        // ========== VALIDASI INPUT DASAR ==========
         if (name == null || name.isBlank()) {
             throw new IllegalArgumentException("Nama pelanggan tidak boleh kosong.");
         }
         if (phone == null || phone.isBlank()) {
-            throw new IllegalArgumentException("Nomor telepon tidak boleh kosong.");
+            throw new IllegalArgumentException("Nomor telepon pelanggan tidak boleh kosong.");
         }
 
-        // Generate ID baru, pendek, misal: C-0123
+        // ========== GENERATE ID ==========
         String id = generateCustomerId();
 
         Customer newCustomer = new Customer(id, name, phone);
 
+        // ========== CEK VALIDITAS MODEL (BR-05) ==========
         if (!newCustomer.isValid()) {
             throw new IllegalArgumentException(
-                    "Data pelanggan tidak valid. Nama tidak boleh kosong dan format nomor telepon salah.");
+                    "Data pelanggan tidak valid. Nama tidak boleh kosong dan format nomor telepon harus benar."
+            );
         }
 
-        return customerDAO.save(newCustomer);
+        // ========== CEK DUPLIKAT CUSTOMER (BR-05: kombinasi nama + nomor telepon tidak boleh sama) ==========
+        List<Customer> all = customerDAO.findAll();
+        for (Customer c : all) {
+            if (c.getName().equalsIgnoreCase(name.trim())
+                    && c.getPhone().equals(phone.trim())) {
+                throw new IllegalArgumentException(
+                        "Customer dengan nama dan nomor telepon yang sama sudah terdaftar."
+                );
+            }
+        }
+
+        // ========== SIMPAN KE DATABASE ==========
+        try {
+            return customerDAO.save(newCustomer);
+        } catch (Exception e) {
+            throw new RuntimeException("Gagal menyimpan customer ke database: " + e.getMessage(), e);
+        }
     }
 
     /**
-     * Generate ID customer pendek: C-0000 s/d C-9999.
-     * Loop sampai ketemu ID yang belum dipakai (cek ke database).
+     * Generate ID customer pendek: CUST01, CUST02, ..., CUST100 ...
      */
     private String generateCustomerId() {
-        // Ambil semua customer dari DB
-        List<Customer> all = customerDAO.findAll();
-    
+
+        List<Customer> all;
+        try {
+            all = customerDAO.findAll();
+        } catch (Exception e) {
+            throw new RuntimeException("Gagal mengambil data customer dari database.", e);
+        }
+
         int max = 0;
+
         for (Customer c : all) {
-            String id = c.getCustomerId();   // contoh lama: CUST-..., contoh baru: cust01
+            String id = c.getCustomerId();
             if (id == null) continue;
-    
+
             String lower = id.toLowerCase();
             if (lower.startsWith("cust")) {
-                String numPart = id.substring(4); // ambil setelah "cust"
+                String numPart = id.substring(4);
                 try {
                     int n = Integer.parseInt(numPart);
                     if (n > max) max = n;
                 } catch (NumberFormatException ignore) {
-                    // abaikan ID lama yang formatnya beda
+                    // Abaikan ID lama yang formatnya tidak konsisten
                 }
             }
         }
-    
+
         int next = max + 1;
-    
-        // 01..99 pakai 2 digit, 100 ke atas tanpa padding
+
         String numStr = (next < 100)
                 ? String.format("%02d", next)
                 : String.valueOf(next);
-    
-        return "cust" + numStr;   // hasil: cust01, cust02, ..., cust100, ...
-    }    
+
+        return "cust" + numStr;
+    }
 
     public Customer getCustomerById(String id) {
+
         if (id == null || id.trim().isEmpty()) {
             throw new IllegalArgumentException("Customer ID tidak boleh kosong.");
         }
-        return customerDAO.findById(id);
+
+        Customer found;
+        try {
+            found = customerDAO.findById(id);
+        } catch (Exception e) {
+            throw new RuntimeException("Gagal mengambil data customer dari database.", e);
+        }
+
+        if (found == null) {
+            throw new IllegalArgumentException("Customer dengan ID tersebut tidak ditemukan.");
+        }
+
+        return found;
     }
 
     public List<Customer> getAllCustomers() {
-        return customerDAO.findAll();
+        try {
+            return customerDAO.findAll();
+        } catch (Exception e) {
+            throw new RuntimeException("Gagal mengambil daftar customer dari database.", e);
+        }
     }
 }

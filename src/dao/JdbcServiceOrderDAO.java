@@ -18,17 +18,30 @@ public class JdbcServiceOrderDAO implements ServiceOrderDAO {
     private final PetDAO petDAO = new JdbcPetDAO();
     private final CustomerDAO customerDAO = new JdbcCustomerDAO();
 
+    //===========================================================
+    //   SERVICE STRATEGY MAPPING
+    //===========================================================
     private ServiceStrategy mapServiceStrategy(String serviceType) {
-        if (serviceType == null) return null;
-        switch (serviceType.toLowerCase()) {
-            case "grooming" -> { return new GroomingService(); }
-            case "boarding" -> { return new BoardingService(); }
-            case "medical"  -> { return new MedicalService(); }
-            default -> { return null; }
+
+        if (serviceType == null || serviceType.isBlank()) {
+            throw new IllegalArgumentException("Kolom service_type pada database tidak boleh NULL.");
         }
+
+        String type = serviceType.trim().toLowerCase();
+
+        if (type.contains("groom")) return new GroomingService();
+        if (type.contains("board")) return new BoardingService();
+        if (type.contains("med"))   return new MedicalService();
+
+        throw new IllegalArgumentException("Service type tidak dikenali: " + serviceType);
     }
 
+
+    //===========================================================
+    //   MAP RESULTSET KE ServiceOrder (CORE FIX)
+    //===========================================================
     private ServiceOrder mapRowToOrder(ResultSet rs) throws SQLException {
+
         String id = rs.getString("id");
         String petId = rs.getString("pet_id");
         String serviceType = rs.getString("service_type");
@@ -37,22 +50,46 @@ public class JdbcServiceOrderDAO implements ServiceOrderDAO {
         String status = rs.getString("status");
         double totalCost = rs.getDouble("total_cost");
 
+        // ===== VALIDASI ENTRY TIME =====
+        if (entryTs == null) {
+            throw new IllegalArgumentException("entry_time NULL pada order id = " + id);
+        }
+
+        // ===== PET =====
         Pet pet = petDAO.findById(petId);
+        if (pet == null) {
+            throw new IllegalArgumentException("Pet dengan ID " + petId + " tidak ditemukan.");
+        }
+
+        // ===== CUSTOMER =====
         Customer customer = customerDAO.findById(pet.getOwnerId());
+        if (customer == null) {
+            throw new IllegalArgumentException("Owner untuk pet " + petId + " tidak ditemukan.");
+        }
 
+        // ===== SERVICE (Tidak boleh null) =====
         ServiceStrategy service = mapServiceStrategy(serviceType);
-        LocalDateTime entryTime = entryTs != null ? entryTs.toLocalDateTime() : null;
-        LocalDateTime exitTime = exitTs != null ? exitTs.toLocalDateTime() : null;
 
+        // ===== WAKTU =====
+        LocalDateTime entryTime = entryTs.toLocalDateTime();
+        LocalDateTime exitTime = (exitTs != null) ? exitTs.toLocalDateTime() : entryTime;
+
+        // ===== BANGUN ORDER (VALIDATION DI SERVICEORDER AKTIF) =====
         ServiceOrder order = new ServiceOrder(id, pet, customer, service, entryTime, exitTime);
+
         order.setStatusFromDb(status);
         order.setTotalCost(totalCost);
 
         return order;
     }
 
+
+    //===========================================================
+    //   INSERT ORDER
+    //===========================================================
     @Override
     public ServiceOrder save(ServiceOrder order) {
+
         String sql = """
                 INSERT INTO service_orders
                 (id, pet_id, service_type, entry_time, exit_time, status, total_cost)
@@ -66,11 +103,13 @@ public class JdbcServiceOrderDAO implements ServiceOrderDAO {
             ps.setString(2, order.getPet().getPetId());
             ps.setString(3, order.getService().getName());
             ps.setTimestamp(4, Timestamp.valueOf(order.getEntryTime()));
+
             if (order.getExitTime() != null) {
                 ps.setTimestamp(5, Timestamp.valueOf(order.getExitTime()));
             } else {
                 ps.setNull(5, Types.TIMESTAMP);
             }
+
             ps.setString(6, order.getStatus());
             ps.setDouble(7, order.getTotalCost());
 
@@ -82,6 +121,10 @@ public class JdbcServiceOrderDAO implements ServiceOrderDAO {
         }
     }
 
+
+    //===========================================================
+    //   GET BY ID
+    //===========================================================
     @Override
     public ServiceOrder findById(String id) {
         String sql = "SELECT * FROM service_orders WHERE id = ?";
@@ -93,7 +136,11 @@ public class JdbcServiceOrderDAO implements ServiceOrderDAO {
             ResultSet rs = ps.executeQuery();
 
             if (rs.next()) {
-                return mapRowToOrder(rs);
+                try {
+                    return mapRowToOrder(rs);
+                } catch (Exception e) {
+                    throw new RuntimeException("Gagal memetakan service order: " + e.getMessage(), e);
+                }
             }
             return null;
 
@@ -102,8 +149,13 @@ public class JdbcServiceOrderDAO implements ServiceOrderDAO {
         }
     }
 
+
+    //===========================================================
+    //   GET ACTIVE ORDERS
+    //===========================================================
     @Override
     public List<ServiceOrder> findActiveOrders() {
+
         String sql = """
                 SELECT * FROM service_orders
                 WHERE status = 'Menunggu' OR status = 'Sedang dikerjakan'
@@ -117,17 +169,27 @@ public class JdbcServiceOrderDAO implements ServiceOrderDAO {
              ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
-                result.add(mapRowToOrder(rs));
+                try {
+                    result.add(mapRowToOrder(rs));
+                } catch (Exception e) {
+                    throw new RuntimeException("Gagal memetakan active order: " + e.getMessage(), e);
+                }
             }
+
             return result;
 
         } catch (SQLException e) {
-            throw new RuntimeException("Gagal mengambil active orders", e);
+            throw new RuntimeException("Gagal mengambil active orders.", e);
         }
     }
 
+
+    //===========================================================
+    //   GET ORDERS BY PET
+    //===========================================================
     @Override
     public List<ServiceOrder> findByPet(String petId) {
+
         String sql = "SELECT * FROM service_orders WHERE pet_id = ? ORDER BY entry_time";
 
         List<ServiceOrder> result = new ArrayList<>();
@@ -139,8 +201,13 @@ public class JdbcServiceOrderDAO implements ServiceOrderDAO {
             ResultSet rs = ps.executeQuery();
 
             while (rs.next()) {
-                result.add(mapRowToOrder(rs));
+                try {
+                    result.add(mapRowToOrder(rs));
+                } catch (Exception e) {
+                    throw new RuntimeException("Gagal memetakan order untuk pet: " + petId, e);
+                }
             }
+
             return result;
 
         } catch (SQLException e) {
@@ -148,8 +215,13 @@ public class JdbcServiceOrderDAO implements ServiceOrderDAO {
         }
     }
 
+
+    //===========================================================
+    //   UPDATE STATUS
+    //===========================================================
     @Override
     public boolean updateStatus(String orderId, String newStatus) {
+
         String sql = "UPDATE service_orders SET status = ? WHERE id = ?";
 
         try (Connection conn = DatabaseConnection.getConnection();
@@ -157,16 +229,21 @@ public class JdbcServiceOrderDAO implements ServiceOrderDAO {
 
             ps.setString(1, newStatus);
             ps.setString(2, orderId);
-            int affected = ps.executeUpdate();
-            return affected > 0;
+
+            return ps.executeUpdate() > 0;
 
         } catch (SQLException e) {
             throw new RuntimeException("Gagal mengupdate status order: " + orderId, e);
         }
     }
 
+
+    //===========================================================
+    //   GET FINISHED ORDERS
+    //===========================================================
     @Override
     public List<ServiceOrder> findFinishedOrders() {
+
         String sql = "SELECT * FROM service_orders WHERE status = 'Selesai' ORDER BY entry_time";
 
         List<ServiceOrder> result = new ArrayList<>();
@@ -176,12 +253,17 @@ public class JdbcServiceOrderDAO implements ServiceOrderDAO {
              ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
-                result.add(mapRowToOrder(rs));
+                try {
+                    result.add(mapRowToOrder(rs));
+                } catch (Exception e) {
+                    throw new RuntimeException("Gagal memetakan finished order.", e);
+                }
             }
+
             return result;
 
         } catch (SQLException e) {
-            throw new RuntimeException("Gagal mengambil finished orders", e);
+            throw new RuntimeException("Gagal mengambil daftar finished orders.", e);
         }
     }
 }
