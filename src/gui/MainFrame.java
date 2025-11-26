@@ -38,13 +38,13 @@ public class MainFrame extends JFrame {
     private JButton btnAddPet;
     private JTable tblCustomers;
     private JTable tblPets;
-    private JButton btnAddToService;   // tombol untuk kirim Pet ke tab Service
+    private JButton btnAddToService;    // tombol untuk kirim Pet ke tab Service
 
     // --- Komponen Service Order tab ---
     private JTextField txtPetId;
     private JComboBox<String> cbServiceType;
     private JTextField txtEntry;
-    private JTextField txtExit;
+    private JTextField txtExit; // Komponen Exit Time
     private JButton btnCreateOrder;
     private JTable tblOrders;
     private JButton btnStart;
@@ -212,7 +212,7 @@ public class MainFrame extends JFrame {
         JLabel lblEntry = new JLabel("Entry (yyyy-MM-dd HH:mm):");
         txtEntry = new JTextField(16);
         JLabel lblExit = new JLabel("Exit (for Boarding, optional):");
-        txtExit = new JTextField(16);
+        txtExit = new JTextField(16); // Exit Time Field
         btnCreateOrder = new JButton("Create Order");
 
         gbc.gridx = 0; gbc.gridy = 0;
@@ -375,7 +375,30 @@ public class MainFrame extends JFrame {
             // fokus ke entry time (kalau mau di-edit sama user)
             txtEntry.requestFocus();
         });
+        
+        // ========================================================
+        // --- PERUBAHAN BARU: Listener untuk Service Type ---
+        // ========================================================
+        cbServiceType.addActionListener(e -> {
+            // Ambil tipe layanan yang dipilih
+            String selectedService = (String) cbServiceType.getSelectedItem();
 
+            // Cek apakah layanan yang dipilih adalah "Boarding"
+            if ("Boarding".equals(selectedService)) {
+                // Jika Boarding: Waktu Exit wajib, maka field diaktifkan
+                txtExit.setEnabled(true);
+                txtExit.setBackground(Color.WHITE); // Beri warna normal
+                txtExit.setToolTipText("Wajib diisi untuk Boarding");
+            } else {
+                // Jika Grooming atau Medical: Waktu Exit tidak relevan/opsional diabaikan
+                txtExit.setText(""); // Kosongkan nilainya
+                txtExit.setEnabled(false); // Nonaktifkan field
+                txtExit.setBackground(Color.LIGHT_GRAY); // Beri warna abu-abu untuk menunjukkan non-aktif
+                txtExit.setToolTipText("Hanya digunakan untuk layanan Boarding");
+            }
+        });
+        // ========================================================
+        
         // Create Order
         btnCreateOrder.addActionListener(e -> {
             try {
@@ -386,7 +409,9 @@ public class MainFrame extends JFrame {
 
                 LocalDateTime entry = LocalDateTime.parse(entryText, dtFormatter);
                 LocalDateTime exit = null;
-                if (!exitText.isBlank()) {
+                
+                // Pastikan exit hanya di-parse jika field tidak kosong dan tidak dinonaktifkan
+                if (txtExit.isEnabled() && !exitText.isBlank()) {
                     exit = LocalDateTime.parse(exitText, dtFormatter);
                 }
 
@@ -463,6 +488,9 @@ public class MainFrame extends JFrame {
                 showError(ex);
             }
         });
+        
+        // --- Pastikan field Exit dinonaktifkan di awal ---
+        cbServiceType.getActionListeners()[0].actionPerformed(null);
     }
 
     private void initialLoad() {

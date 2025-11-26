@@ -5,6 +5,7 @@ import dao.ServiceOrderDAO;
 import model.Customer;
 import model.Pet;
 import model.ServiceOrder;
+import strategy.service.BoardingService;
 import strategy.service.ServiceStrategy;
 
 import java.time.LocalDateTime;
@@ -21,6 +22,10 @@ import java.util.UUID;
 public class OrderManager {
 
     private final ServiceOrderDAO orderDAO;
+    
+    // Konstanta untuk Sentinel Time (Tahun Jauh)
+    // Digunakan jika exitTime tidak diisi untuk layanan non-Boarding (memenuhi NOT NULL database)
+    private static final LocalDateTime SENTINEL_EXIT_TIME = LocalDateTime.of(2999, 12, 31, 23, 59, 59);
 
     public OrderManager() {
         this.orderDAO = new JdbcServiceOrderDAO();
@@ -60,19 +65,37 @@ public class OrderManager {
                                     LocalDateTime entryTime,
                                     LocalDateTime exitTime) {
 
-        // ===== VALIDASI INPUT =====
+        // ===== VALIDASI INPUT DASAR =====
         if (pet == null) throw new IllegalArgumentException("Pet tidak boleh null.");
         if (customer == null) throw new IllegalArgumentException("Customer tidak boleh null.");
         if (service == null) throw new IllegalArgumentException("Service tidak boleh null.");
 
+        // Memberi nilai default jika entryTime null
         if (entryTime == null) {
             entryTime = LocalDateTime.now();
         }
-        if (exitTime == null) {
-            throw new IllegalArgumentException("Exit time tidak boleh null.");
-        }
-        if (exitTime.isBefore(entryTime)) {
-            throw new IllegalArgumentException("Exit time tidak boleh sebelum entry time.");
+        
+        // ===== LOGIKA SENTINEL & VALIDASI WAKTU UTAMA =====
+        if (service instanceof BoardingService) {
+            // Jika Boarding: exitTime wajib ada
+            if (exitTime == null) {
+                throw new IllegalArgumentException("Exit time wajib diisi untuk layanan Boarding karena biaya dihitung berdasarkan durasi.");
+            }
+            // Validasi: exitTime tidak boleh sebelum entryTime (hanya dilakukan jika exitTime ada)
+            if (exitTime.isBefore(entryTime)) {
+                throw new IllegalArgumentException("Exit time tidak boleh sebelum entry time.");
+            }
+        } else {
+            // Jika Grooming/Medical (Non-Boarding):
+            // 1. Jika exitTime diisi, validasi tetap berjalan.
+            // 2. Jika exitTime null (biasanya dari GUI), gunakan Sentinel Time 
+            //    untuk memenuhi aturan NOT NULL di database.
+            if (exitTime == null) {
+                exitTime = SENTINEL_EXIT_TIME; 
+            } else if (exitTime.isBefore(entryTime)) {
+                // Walaupun tidak wajib, jika diisi, tetap harus valid
+                 throw new IllegalArgumentException("Exit time tidak boleh sebelum entry time.");
+            }
         }
 
         // ===== CEK apakah pet masih aktif =====
@@ -84,6 +107,7 @@ public class OrderManager {
 
         ServiceOrder order;
         try {
+            // Menggunakan exitTime yang mungkin sudah di-set ke SENTINEL_EXIT_TIME
             order = new ServiceOrder(orderId, pet, customer, service, entryTime, exitTime);
         } catch (Exception e) {
             throw new RuntimeException("Gagal membuat order: " + e.getMessage(), e);
