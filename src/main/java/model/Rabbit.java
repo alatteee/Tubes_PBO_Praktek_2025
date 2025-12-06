@@ -1,5 +1,4 @@
 package model;
-
 public class Rabbit extends Pet {
 
     private static final double BASE_PRICE = 40000.0;
@@ -16,8 +15,10 @@ public class Rabbit extends Pet {
         super(petId, name, age, ownerId);
     }
 
-    // Mengimplementasikan harga dasar layanan untuk Kelinci.
-    @return 
+    /**
+     * Mengimplementasikan harga dasar layanan untuk Kelinci.
+     * @return Harga dasar layanan.
+     */
     @Override
     public double getBasePrice() {
         return BASE_PRICE;

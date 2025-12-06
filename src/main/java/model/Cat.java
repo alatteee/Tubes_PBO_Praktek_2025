@@ -1,8 +1,6 @@
 package model;
-
 public class Cat extends Pet {
 
-    // Harga dasar layanan (Base Price) untuk Kucing
     private static final double BASE_PRICE = 60000.0;
 
     /**
@@ -17,7 +15,10 @@ public class Cat extends Pet {
         super(petId, name, age, ownerId);
     }
 
-    // Mengimplementasikan harga dasar layanan untuk Kucing.@return
+    /**
+     * Mengimplementasikan harga dasar layanan untuk Kucing.
+     * @return Harga dasar layanan.
+     */
     @Override
     public double getBasePrice() {
         return BASE_PRICE;
