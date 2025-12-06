@@ -4,10 +4,8 @@ public interface PaymentStrategy {
 
     String getName();
 
-    /**
-     * Melakukan proses pembayaran.
-     * @param amount jumlah yang harus dibayar
-     * @return true jika pembayaran dianggap berhasil
-     */
+    // Melakukan proses pembayaran.
+    @param amount 
+    @return 
     boolean pay(double amount);
 }

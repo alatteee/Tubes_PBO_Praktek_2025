@@ -24,7 +24,7 @@ public class MainFrame extends JFrame {
 
     private final PetCareFacade facade;
 
-    // supaya bisa ganti tab dari listener
+    // bisa ganti tab dari listener
     private JTabbedPane tabbedPane;
 
     // --- Komponen Customer/Pet tab ---
@@ -80,9 +80,8 @@ public class MainFrame extends JFrame {
         add(tabbedPane, BorderLayout.CENTER);
     }
 
-    // ============================================================
+
     // =============== PANEL CUSTOMER & PET =======================
-    // ============================================================
     private JPanel createCustomerPetPanel() {
         JPanel panel = new JPanel(new BorderLayout());
 
@@ -191,9 +190,8 @@ public class MainFrame extends JFrame {
         return panel;
     }
 
-    // ============================================================
+
     // =============== PANEL SERVICE ORDER ========================
-    // ============================================================
     private JPanel createServiceOrderPanel() {
         JPanel panel = new JPanel(new BorderLayout());
 
@@ -257,9 +255,8 @@ public class MainFrame extends JFrame {
         return panel;
     }
 
-    // ============================================================
+
     // ================== PANEL CHECKOUT ==========================
-    // ============================================================
     private JPanel createCheckoutPanel() {
         JPanel panel = new JPanel(new BorderLayout());
 
@@ -293,9 +290,8 @@ public class MainFrame extends JFrame {
         return panel;
     }
 
-    // ============================================================
+
     // =============== LISTENERS & HELPERS ========================
-    // ============================================================
     private void initListeners() {
         // Add Customer
         btnAddCustomer.addActionListener(e -> {
@@ -376,9 +372,7 @@ public class MainFrame extends JFrame {
             txtEntry.requestFocus();
         });
         
-        // ========================================================
-        // --- PERUBAHAN BARU: Listener untuk Service Type ---
-        // ========================================================
+
         cbServiceType.addActionListener(e -> {
             // Ambil tipe layanan yang dipilih
             String selectedService = (String) cbServiceType.getSelectedItem();
@@ -391,13 +385,12 @@ public class MainFrame extends JFrame {
                 txtExit.setToolTipText("Wajib diisi untuk Boarding");
             } else {
                 // Jika Grooming atau Medical: Waktu Exit tidak relevan/opsional diabaikan
-                txtExit.setText(""); // Kosongkan nilainya
+                txtExit.setText(""); // Kosongkan nilai
                 txtExit.setEnabled(false); // Nonaktifkan field
                 txtExit.setBackground(Color.LIGHT_GRAY); // Beri warna abu-abu untuk menunjukkan non-aktif
                 txtExit.setToolTipText("Hanya digunakan untuk layanan Boarding");
             }
         });
-        // ========================================================
         
         // Create Order
         btnCreateOrder.addActionListener(e -> {
@@ -581,7 +574,7 @@ public class MainFrame extends JFrame {
     }
 
     private PaymentStrategy createPaymentStrategy(String method) {
-        if (method == null) return new CashPayment(); // default
+        if (method == null) return new CashPayment(); 
         String m = method.toLowerCase();
         if (m.contains("transfer")) {
             return new TransferPayment();

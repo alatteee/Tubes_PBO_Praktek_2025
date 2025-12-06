@@ -13,7 +13,6 @@ public class PetInsertTest {
         CustomerManager cm = new CustomerManager();
         PetManager pm = new PetManager();
 
-        // Data unik biar tidak bentrok
         String ownerName = "Owner Pet " + System.currentTimeMillis();
         String phone     = "08" + System.currentTimeMillis();
         String petName   = "Mimi-" + System.currentTimeMillis();

@@ -6,7 +6,6 @@ public class TransferPayment implements PaymentStrategy {
     private String accountNumber;
 
     public TransferPayment() {
-        // nilai default; nanti kalau perlu bisa dikembangkan
         this.bankName = "Bank Default";
         this.accountNumber = "0000000000";
     }
@@ -23,13 +22,10 @@ public class TransferPayment implements PaymentStrategy {
 
     @Override
     public boolean pay(double amount) {
-        // Dummy: dianggap selalu berhasil
         System.out.println("[Payment] Transfer to " + bankName +
                 " (" + accountNumber + ") amount: " + amount);
         return true;
     }
-
-    // Getter / Setter opsional
 
     public String getBankName() {
         return bankName;

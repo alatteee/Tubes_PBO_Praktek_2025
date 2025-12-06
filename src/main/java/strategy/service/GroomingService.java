@@ -18,9 +18,6 @@ public class GroomingService implements ServiceStrategy {
         if (order == null) {
             throw new IllegalArgumentException("Order tidak boleh null untuk menghitung harga grooming.");
         }
-        if (PRICE <= 0) {
-            throw new IllegalStateException("Harga grooming tidak valid (0 atau negatif).");
-        }
 
         return PRICE;
     }

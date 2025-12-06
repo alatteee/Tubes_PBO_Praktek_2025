@@ -10,7 +10,6 @@ public class ConnectionTest {
     void testDatabaseConnection() {
         assertDoesNotThrow(() -> {
             try (Connection conn = DatabaseConnection.getConnection()) {
-                // kalau gagal, bakal lempar exception dan test gagal
             }
         });
     }

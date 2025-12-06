@@ -9,7 +9,6 @@ public class DriverTest {
 
     @Test
     void testPostgresDriverAvailable() {
-        // Pastikan class driver PostgreSQL ada di classpath
         assertDoesNotThrow(
                 () -> Class.forName("org.postgresql.Driver"),
                 "Driver PostgreSQL seharusnya tersedia di classpath"
@@ -23,7 +22,6 @@ public class DriverTest {
                 assertNotNull(conn, "Koneksi tidak boleh null");
                 String productName = conn.getMetaData().getDatabaseProductName();
                 assertNotNull(productName, "Nama produk database tidak boleh null");
-                // Biasanya "PostgreSQL"
                 assertTrue(productName.toLowerCase().contains("postgres"),
                         "Database harusnya PostgreSQL, tapi dapat: " + productName);
             }

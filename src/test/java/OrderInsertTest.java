@@ -20,7 +20,6 @@ public class OrderInsertTest {
         PetManager pm = new PetManager();
         OrderManager om = new OrderManager();
 
-        // Bikin data unik supaya tidak nabrak constraint
         String customerName = "Order Customer " + System.currentTimeMillis();
         String phone        = "08" + System.currentTimeMillis();
         String petName      = "Kuro-" + System.currentTimeMillis();

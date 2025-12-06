@@ -19,11 +19,6 @@ public class Receipt {
     private PaymentStrategy payment;
     private String pdfFilePath;
 
-    /**
-     * Constructor lengkap sesuai spec:
-     * pdfFilePath boleh null, nanti diisi otomatis oleh saveToPDF().
-     * DITAMBAH EXCEPTION HANDLING
-     */
     public Receipt(String transactionId,
                    LocalDateTime transactionTime,
                    ServiceOrder order,
@@ -167,7 +162,7 @@ public class Receipt {
         File outFile = new File(dir, fileName);
         this.pdfFilePath = outFile.getAbsolutePath();
 
-        // Generate text — ini juga sudah punya exception
+        // Generate text 
         String[] lines;
         try {
             lines = generateReceiptText().split("\\r?\\n");
@@ -175,7 +170,7 @@ public class Receipt {
             throw new RuntimeException("Gagal membuat teks struk: " + e.getMessage(), e);
         }
 
-        // Bangun content PDF
+        // Content PDF
         StringBuilder content = new StringBuilder();
         content.append("BT\n");
         content.append("/F1 12 Tf\n");
@@ -196,15 +191,11 @@ public class Receipt {
         // ==== I/O Handling ====
         try (FileOutputStream fos = new FileOutputStream(outFile)) {
 
-            // (kode PDF builder kamu tetap dipertahankan)
-            // hanya exception di luar yang dibungkus RuntimeException
-
             String header = "%PDF-1.4\n" +
                             "%\u00e2\u00e3\u00cf\u00d3\n";
 
             List<String> objects = new ArrayList<>();
 
-            // original objects (tidak dihapus, hanya diteruskan)
             objects.add("1 0 obj\n" +
                        "<< /Type /Catalog /Pages 2 0 R >>\n" +
                        "endobj\n");

@@ -22,7 +22,6 @@ public class EWalletPayment implements PaymentStrategy {
 
     @Override
     public boolean pay(double amount) {
-        // Dummy: dianggap selalu berhasil
         System.out.println("[Payment] E-Wallet " + providerName +
                 " (" + walletId + ") amount: " + amount);
         return true;

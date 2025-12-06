@@ -3,10 +3,6 @@ package model;
 import java.time.LocalDateTime;
 import strategy.service.ServiceStrategy;
 
-/**
- * Representasi Order Layanan dalam Pet Care System.
- * Menerapkan validasi sesuai Business Rules.
- */
 public class ServiceOrder {
 
     private final String orderId;
@@ -16,19 +12,15 @@ public class ServiceOrder {
     private final LocalDateTime entryTime;
     private final LocalDateTime exitTime;
 
-    private String status = "Menunggu";   // default
+    private String status = "Menunggu"; 
     private double totalCost;
 
-    /**
-     * Konstruktor dengan validasi data sesuai BR.
-     */
     public ServiceOrder(String orderId, Pet pet, Customer customer,
                         ServiceStrategy service,
                         LocalDateTime entryTime, LocalDateTime exitTime) {
 
-        // -----------------------------
-        // VALIDASI WAJIB (EXCEPTION HANDLING)
-        // -----------------------------
+ 
+        // EXCEPTION HANDLING
         if (orderId == null || orderId.isBlank()) {
             throw new IllegalArgumentException("Order ID tidak boleh kosong.");
         }
@@ -47,16 +39,12 @@ public class ServiceOrder {
         if (exitTime == null) {
             throw new IllegalArgumentException("Exit time tidak boleh null.");
         }
-
-        // Masalah pada BoardingService (lama titip tidak valid)
-        // Checking global — Manager juga akan cek lagi
         if (exitTime.isBefore(entryTime)) {
             throw new IllegalArgumentException("Exit time tidak boleh sebelum entry time.");
         }
 
-        // -----------------------------
+ 
         // ASSIGN FIELDS
-        // -----------------------------
         this.orderId = orderId;
         this.pet = pet;
         this.customer = customer;
@@ -65,10 +53,6 @@ public class ServiceOrder {
         this.exitTime = exitTime;
     }
 
-    // ===================================================================
-    // STATUS MANAGEMENT — HARUS MENURUTI FLOW:
-    // Menunggu → Sedang dikerjakan → Selesai → Sudah diambil
-    // ===================================================================
     public void updateStatus(String newStatus) {
         if (!isValidStatusTransition(this.status, newStatus)) {
             throw new IllegalStateException(
@@ -87,9 +71,8 @@ public class ServiceOrder {
         };
     }
 
-    // ===================================================================
+
     // PERHITUNGAN BIAYA (via STRATEGY PATTERN)
-    // ===================================================================
     public double calculateTotal() {
         try {
             this.totalCost = service.calculatePrice(this);
@@ -119,9 +102,8 @@ public class ServiceOrder {
         this.status = status;
     }
 
-    // ===================================================================
+
     // GETTERS
-    // ===================================================================
     public String getOrderId() { return orderId; }
     public Pet getPet() { return pet; }
     public Customer getCustomer() { return customer; }

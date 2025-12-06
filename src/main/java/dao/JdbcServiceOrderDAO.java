@@ -18,9 +18,7 @@ public class JdbcServiceOrderDAO implements ServiceOrderDAO {
     private final PetDAO petDAO = new JdbcPetDAO();
     private final CustomerDAO customerDAO = new JdbcCustomerDAO();
 
-    //===========================================================
     //   SERVICE STRATEGY MAPPING
-    //===========================================================
     private ServiceStrategy mapServiceStrategy(String serviceType) {
 
         if (serviceType == null || serviceType.isBlank()) {
@@ -36,10 +34,7 @@ public class JdbcServiceOrderDAO implements ServiceOrderDAO {
         throw new IllegalArgumentException("Service type tidak dikenali: " + serviceType);
     }
 
-
-    //===========================================================
     //   MAP RESULTSET KE ServiceOrder (CORE FIX)
-    //===========================================================
     private ServiceOrder mapRowToOrder(ResultSet rs) throws SQLException {
 
         String id = rs.getString("id");
@@ -83,10 +78,7 @@ public class JdbcServiceOrderDAO implements ServiceOrderDAO {
         return order;
     }
 
-
-    //===========================================================
     //   INSERT ORDER
-    //===========================================================
     @Override
     public ServiceOrder save(ServiceOrder order) {
 
@@ -121,10 +113,7 @@ public class JdbcServiceOrderDAO implements ServiceOrderDAO {
         }
     }
 
-
-    //===========================================================
     //   GET BY ID
-    //===========================================================
     @Override
     public ServiceOrder findById(String id) {
         String sql = "SELECT * FROM service_orders WHERE id = ?";
@@ -149,10 +138,7 @@ public class JdbcServiceOrderDAO implements ServiceOrderDAO {
         }
     }
 
-
-    //===========================================================
     //   GET ACTIVE ORDERS
-    //===========================================================
     @Override
     public List<ServiceOrder> findActiveOrders() {
 
@@ -183,10 +169,7 @@ public class JdbcServiceOrderDAO implements ServiceOrderDAO {
         }
     }
 
-
-    //===========================================================
     //   GET ORDERS BY PET
-    //===========================================================
     @Override
     public List<ServiceOrder> findByPet(String petId) {
 
@@ -215,10 +198,7 @@ public class JdbcServiceOrderDAO implements ServiceOrderDAO {
         }
     }
 
-
-    //===========================================================
     //   UPDATE STATUS
-    //===========================================================
     @Override
     public boolean updateStatus(String orderId, String newStatus) {
 
@@ -237,10 +217,7 @@ public class JdbcServiceOrderDAO implements ServiceOrderDAO {
         }
     }
 
-
-    //===========================================================
     //   GET FINISHED ORDERS
-    //===========================================================
     @Override
     public List<ServiceOrder> findFinishedOrders() {
 

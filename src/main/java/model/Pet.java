@@ -1,12 +1,7 @@
 package model;
 
-/**
- * Kelas abstrak yang merepresentasikan Hewan Peliharaan.
- * Berfungsi sebagai superclass untuk Cat, Dog, dan Rabbit.
- */
 public abstract class Pet {
 
-    // Field inti tidak final agar bisa di-set ulang saat load dari database.
     protected String petId;
     protected String name;
     protected int age;

@@ -31,9 +31,6 @@ public class MedicalService implements ServiceStrategy {
         if (order == null) {
             throw new IllegalArgumentException("Order tidak boleh null untuk menghitung harga medical service.");
         }
-        if (BASE_PRICE <= 0) {
-            throw new IllegalStateException("Base price medical service tidak valid (0 atau negatif).");
-        }
         if (medicineCost < 0) {
             throw new IllegalStateException("Biaya obat tidak valid (negatif).");
         }

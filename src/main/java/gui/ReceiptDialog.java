@@ -46,7 +46,6 @@ public class ReceiptDialog extends JDialog {
     private void initListeners() {
         btnSave.addActionListener(e -> {
             try {
-                // versi baru: saveToPDF() TANPA parameter
                 receipt.saveToPDF();
                 JOptionPane.showMessageDialog(
                         this,

@@ -1,8 +1,5 @@
 package model;
 
-/**
- * Merepresentasikan jenis hewan Kucing, mewarisi dari kelas Pet.
- */
 public class Cat extends Pet {
 
     // Harga dasar layanan (Base Price) untuk Kucing
@@ -18,23 +15,11 @@ public class Cat extends Pet {
      */
     public Cat(String petId, String name, int age, String ownerId) {
         super(petId, name, age, ownerId);
-
-        // VALIDASI TAMBAHAN (opsional tapi aman)
-        if (BASE_PRICE <= 0) {
-            throw new IllegalStateException("Base price untuk Cat tidak boleh 0 atau negatif.");
-        }
     }
 
-    /**
-     * Mengimplementasikan harga dasar layanan untuk Kucing.
-     * @return Harga dasar layanan.
-     */
+    // Mengimplementasikan harga dasar layanan untuk Kucing.@return
     @Override
     public double getBasePrice() {
-        // Tambahan pengecekan saat runtime (untuk berjaga-jaga)
-        if (BASE_PRICE <= 0) {
-            throw new IllegalStateException("Base price untuk Cat tidak valid (0 atau negatif).");
-        }
         return BASE_PRICE;
     }
 }

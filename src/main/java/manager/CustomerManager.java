@@ -6,20 +6,11 @@ import dao.CustomerDAO;
 import dao.JdbcCustomerDAO;
 import model.Customer;
 
-/**
- * Kelas yang menangani business logic untuk entitas Customer.
- * - Validasi data customer (BR-05)
- * - Generate ID customer
- * - Interaksi data melalui CustomerDAO (CRUD).
- */
+
 public class CustomerManager {
 
     private final CustomerDAO customerDAO;
 
-    /**
-     * Konstruktor default.
-     * Dipakai oleh PetCareFacade (tanpa dependency injection eksplisit).
-     */
     public CustomerManager() {
         this.customerDAO = new JdbcCustomerDAO();
     }
@@ -73,9 +64,7 @@ public class CustomerManager {
         }
     }
 
-    /**
-     * Generate ID customer pendek: CUST01, CUST02, ..., CUST100 ...
-     */
+    // Generate ID customer pendek: CUST01, CUST02, ..., CUST100 ...
     private String generateCustomerId() {
 
         List<Customer> all;

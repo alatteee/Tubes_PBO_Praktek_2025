@@ -8,21 +8,12 @@ import model.Pet;
 
 import java.util.List;
 
-/**
- * PetManager bertanggung jawab untuk:
- * - Validasi data Pet
- * - Pembuatan Pet melalui PetFactory (Factory Method Pattern)
- * - Interaksi data via PetDAO (CRUD)
- */
 public class PetManager {
 
     private final PetDAO petDAO;
     private final PetFactory petFactory;
 
-    /**
-     * Konstruktor default – membuat PetDAO dan PetFactory sendiri
-     * Cocok dipakai oleh PetCareFacade.
-     */
+    // Konstruktor default
     public PetManager() {
         this.petDAO = new JdbcPetDAO();
         this.petFactory = new PetFactory();
@@ -51,13 +42,11 @@ public class PetManager {
             throw new IllegalArgumentException("Umur hewan tidak boleh negatif.");
         }
 
-        // ===== CEK PET DUPLIKAT (optional tapi aman untuk BR-33) =====
+        // ===== CEK PET DUPLIKAT =====
         try {
             List<Pet> pets = petDAO.findByCustomer(owner.getCustomerId());
             for (Pet p : pets) {
                 if (p.getName().equalsIgnoreCase(name.trim())) {
-                    // NOTE: Nama pet boleh sama jika pemilik berbeda,
-                    // tapi tidak boleh sama dalam 1 customer (good practice)
                     throw new IllegalArgumentException(
                         "Nama hewan sudah digunakan oleh customer ini."
                     );
@@ -88,9 +77,7 @@ public class PetManager {
         }
     }
 
-    /**
-     * Ambil Pet berdasarkan ID.
-     */
+    // Ambil Pet berdasarkan ID
     public Pet getPetById(String petId) {
 
         if (petId == null || petId.isBlank()) {
@@ -111,9 +98,7 @@ public class PetManager {
         return pet;
     }
 
-    /**
-     * Ambil semua Pet (untuk tabel GUI).
-     */
+    // Ambil semua Pet (untuk tabel GUI)
     public List<Pet> getAllPets() {
         try {
             return petDAO.findAll();
@@ -122,9 +107,7 @@ public class PetManager {
         }
     }
 
-    /**
-     * Ambil daftar Pet milik Customer tertentu.
-     */
+    // Ambil daftar Pet milik Customer tertentu
     public List<Pet> getPetsByCustomer(Customer owner) {
 
         if (owner == null) {
@@ -138,10 +121,7 @@ public class PetManager {
         }
     }
 
-    /**
-     * Update Pet (status, nama, atau data lainnya jika perlu).
-     * Dipakai untuk checkout: status pet → "Tidak dalam layanan"
-     */
+    // Update Pet (status, nama, atau data lainnya jika perlu)
     public Pet update(Pet pet) {
 
         if (pet == null) {

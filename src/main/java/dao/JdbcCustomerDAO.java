@@ -52,7 +52,6 @@ public class JdbcCustomerDAO implements CustomerDAO {
 
     @Override
     public List<Customer> findAll() {
-        // SUDAH DIURUTKAN ASCENDING BERDASARKAN ID
         String sql = "SELECT id, name, phone FROM customers ORDER BY id ASC";
 
         List<Customer> result = new ArrayList<>();

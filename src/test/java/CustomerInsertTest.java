@@ -29,16 +29,13 @@ public class CustomerInsertTest {
     void testRegisterDuplicateCustomer_throwsException() {
         CustomerManager cm = new CustomerManager();
 
-        // PAKAI DATA UNIK JUGA, tapi dipakai 2x di DALAM 1 TEST
         long suffix = System.currentTimeMillis();
         String name  = "JUnit Duplicate " + suffix;
         String phone = "08" + suffix;
 
-        // Pertama: harus sukses
         Customer first = cm.registerCustomer(name, phone);
         assertNotNull(first);
 
-        // Kedua dengan data yang SAMA: HARUS melempar IllegalArgumentException
         assertThrows(
                 IllegalArgumentException.class,
                 () -> cm.registerCustomer(name, phone),

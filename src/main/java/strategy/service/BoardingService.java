@@ -22,9 +22,6 @@ public class BoardingService implements ServiceStrategy {
         if (order.getEntryTime() == null || order.getExitTime() == null) {
             throw new IllegalArgumentException("Entry/Exit time tidak boleh null pada boarding service.");
         }
-        if (PRICE_PER_DAY <= 0) {
-            throw new IllegalStateException("Harga per hari boarding tidak valid (0 atau negatif).");
-        }
 
         // === VALIDASI BUSINESS RULE YANG SUDAH ADA ===
         if (order.getExitTime().isBefore(order.getEntryTime())) {

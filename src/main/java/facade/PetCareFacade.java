@@ -21,10 +21,6 @@ import strategy.service.MedicalService;
 
 import strategy.payment.PaymentStrategy;
 
-/**
- * Facade untuk menyederhanakan akses dari GUI ke layer bisnis.
- * GUI hanya berurusan dengan PetCareFacade, tidak langsung ke Manager/DAO.
- */
 public class PetCareFacade {
 
     private final CustomerManager customerManager;
@@ -52,7 +48,6 @@ public class PetCareFacade {
         try {
             return customerManager.registerCustomer(name, phone);
         } catch (IllegalArgumentException e) {
-            // Menangkap Business Rule Validation (contoh: Duplikat Customer)
             throw new Exception("Gagal mendaftar customer: " + e.getMessage());
         } catch (RuntimeException e) {
             // Menangkap kegagalan Database/Infrastructure
@@ -80,7 +75,6 @@ public class PetCareFacade {
     }
 
     // ===================== PET =====================
-
     public Pet registerPet(String ownerId, String type, String name, int age) throws Exception {
         if (ownerId == null || ownerId.isBlank()) {
             throw new IllegalArgumentException("Owner ID tidak boleh kosong");
@@ -136,7 +130,6 @@ public class PetCareFacade {
     }
 
     // ===================== SERVICE ORDER =====================
-
     public ServiceOrder createServiceOrder(String petId,
                                            String serviceType,
                                            LocalDateTime entry,
@@ -246,8 +239,7 @@ public class PetCareFacade {
         }
     }
 
-    // ===================== CHECKOUT (Phase 3, dengan ReceiptDAO) =====================
-
+    // ===================== CHECKOUT =====================
     public Receipt checkout(String orderId, PaymentStrategy paymentStrategy) throws Exception {
         if (orderId == null || orderId.isBlank()) {
             throw new IllegalArgumentException("Order ID tidak boleh kosong");
@@ -307,7 +299,6 @@ public class PetCareFacade {
     }
 
     // ===================== Helper =====================
-
     private ServiceStrategy createServiceStrategy(String serviceType) {
         if (serviceType == null) {
             throw new IllegalArgumentException("Service type tidak boleh null");
@@ -327,12 +318,10 @@ public class PetCareFacade {
     }
 
     private String generateTransactionId(String orderId) {
-        // Contoh: TRX-1768956123456
         return "TRX-" + System.currentTimeMillis();
     }
 
     // ===================== Getter untuk GUI / Testing =====================
-
     public CustomerManager getCustomerManager() {
         return customerManager;
     }

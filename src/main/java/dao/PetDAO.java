@@ -3,10 +3,6 @@ package dao;
 import model.Pet;
 import java.util.List;
 
-/**
- * Kontrak untuk operasi data persistensi (CRUD) Pet.
- * Diimplementasikan oleh Anggota 3.
- */
 public interface PetDAO {
 
     Pet save(Pet pet);

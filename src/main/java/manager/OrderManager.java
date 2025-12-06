@@ -11,29 +11,18 @@ import strategy.service.ServiceStrategy;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
-
-/**
- * OrderManager:
- * - membuat ServiceOrder baru
- * - mengecek apakah Pet masih aktif dalam layanan
- * - mengubah status order (start, finish)
- * - mengambil daftar order aktif / selesai
- */
+  
 public class OrderManager {
 
     private final ServiceOrderDAO orderDAO;
     
-    // Konstanta untuk Sentinel Time (Tahun Jauh)
-    // Digunakan jika exitTime tidak diisi untuk layanan non-Boarding (memenuhi NOT NULL database)
     private static final LocalDateTime SENTINEL_EXIT_TIME = LocalDateTime.of(2999, 12, 31, 23, 59, 59);
 
     public OrderManager() {
         this.orderDAO = new JdbcServiceOrderDAO();
     }
 
-    /**
-     * Cek apakah Pet punya order aktif (Menunggu / Sedang dikerjakan)
-     */
+    // Cek apakah Pet punya order aktif (Menunggu / Sedang dikerjakan)
     public boolean isPetActive(Pet pet) {
         if (pet == null) {
             throw new IllegalArgumentException("Pet tidak boleh null.");
@@ -56,9 +45,7 @@ public class OrderManager {
         return false;
     }
 
-    /**
-     * Membuat order baru.
-     */
+    // Membuat order baru.
     public ServiceOrder createOrder(Pet pet,
                                     Customer customer,
                                     ServiceStrategy service,
@@ -86,10 +73,6 @@ public class OrderManager {
                 throw new IllegalArgumentException("Exit time tidak boleh sebelum entry time.");
             }
         } else {
-            // Jika Grooming/Medical (Non-Boarding):
-            // 1. Jika exitTime diisi, validasi tetap berjalan.
-            // 2. Jika exitTime null (biasanya dari GUI), gunakan Sentinel Time 
-            //    untuk memenuhi aturan NOT NULL di database.
             if (exitTime == null) {
                 exitTime = SENTINEL_EXIT_TIME; 
             } else if (exitTime.isBefore(entryTime)) {
@@ -107,7 +90,6 @@ public class OrderManager {
 
         ServiceOrder order;
         try {
-            // Menggunakan exitTime yang mungkin sudah di-set ke SENTINEL_EXIT_TIME
             order = new ServiceOrder(orderId, pet, customer, service, entryTime, exitTime);
         } catch (Exception e) {
             throw new RuntimeException("Gagal membuat order: " + e.getMessage(), e);

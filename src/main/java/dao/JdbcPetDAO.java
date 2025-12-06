@@ -16,12 +16,12 @@ public class JdbcPetDAO implements PetDAO {
         String sql = "INSERT INTO pets (id, name, type, age, status, owner_id) " +
                      "VALUES (?, ?, ?, ?, ?, ?)";
 
-        try (Connection conn = DatabaseConnection.getUncheckedConnection(); // PERUBAHAN DI SINI
+        try (Connection conn = DatabaseConnection.getUncheckedConnection(); 
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, pet.getPetId());
             ps.setString(2, pet.getName());
-            ps.setString(3, pet.getClass().getSimpleName()); // Cat / Dog / Rabbit
+            ps.setString(3, pet.getClass().getSimpleName()); 
             ps.setInt(4, pet.getAge());
             ps.setString(5, pet.getStatus());
             ps.setString(6, pet.getOwnerId());
@@ -39,7 +39,7 @@ public class JdbcPetDAO implements PetDAO {
         String sql = "SELECT id, name, type, age, status, owner_id " +
                      "FROM pets WHERE id = ?";
 
-        try (Connection conn = DatabaseConnection.getUncheckedConnection(); // PERUBAHAN DI SINI
+        try (Connection conn = DatabaseConnection.getUncheckedConnection(); 
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, id);

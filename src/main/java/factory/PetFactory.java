@@ -10,14 +10,6 @@ import model.Pet;
 
 
 public class PetFactory {
-
-    /**
-     * Factory method untuk membuat Pet sesuai jenisnya.
-     * ID sekarang pendek dan punya prefix per jenis:
-     * Cat    -> C-xxxx
-     * Dog    -> D-xxxx
-     * Rabbit -> R-xxxx
-     */
     public static Pet createPet(String type, String name, int age, String ownerId) {
         String id = generatePetId(type);
 
@@ -30,7 +22,6 @@ public class PetFactory {
             case "rabbit":
                 return new Rabbit(id, name, age, ownerId);
             default:
-                // fallback: kalau ada jenis lain, pakai prefix P
                 return new Pet(id, name, age, ownerId) {
                     @Override
                     public double getBasePrice() {
@@ -40,12 +31,7 @@ public class PetFactory {
         }
     }
 
-    /**
-     * Generate ID Pet per jenis, contoh:
-     * Cat    -> C-0123
-     * Dog    -> D-0456
-     * Rabbit -> R-0789
-     */
+
     private static String generatePetId(String type) {
         String prefix;
 
@@ -61,12 +47,12 @@ public class PetFactory {
 
         int max = 0;
         for (Pet p : allPets) {
-            String id = p.getPetId();   // contoh lama: UUID / C-xxxx, contoh baru: cat01
+            String id = p.getPetId();   
             if (id == null) continue;
 
             String lower = id.toLowerCase();
             if (lower.startsWith(prefix)) {
-                String numPart = id.substring(prefix.length()); // ambil angka setelah prefix
+                String numPart = id.substring(prefix.length()); 
                 try {
                     int n = Integer.parseInt(numPart);
                     if (n > max) max = n;
